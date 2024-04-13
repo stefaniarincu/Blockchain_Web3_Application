@@ -1,16 +1,22 @@
-
 const hre = require("hardhat");
 
-async function main() {
-  const Greeter = await hre.ethers.getContractFactory("Greeter");
-  const greeter = await Greeter.deploy("Hello, Hardhat!");
+async function deploy() {
+  const votingFactory = await hre.ethers.getContractFactory("Voting");
+  const votingContract = await votingFactory.deploy();
 
-  await greeter.deployed();
+  await votingContract.waitForDeployment();
 
-  console.log("Greeter deployed to:", greeter.address);
+  console.log("Voting contract deployed to:", await votingContract.getAddress());
+
+  const rewarderFactory = await hre.ethers.getContractFactory("Rewarder");
+  const rewarderContract = await rewarderFactory.deploy();
+
+  await rewarderContract.waitForDeployment();
+
+  console.log("Rewarder contract deployed to:", await rewarderContract.getAddress());
 }
 
-main()
+deploy()
   .then(() => process.exit(0))
   .catch((error) => {
     console.error(error);
