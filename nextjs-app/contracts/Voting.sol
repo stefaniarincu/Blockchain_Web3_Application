@@ -22,7 +22,6 @@ contract Voting {
     mapping(address => bool) public hasCandidated;
     mapping(address => Voter) public voters;
 
-    address public admin;
     Candidate[] public candidatesList;
     VotingState public currentVotingState;
     uint256 minBalance;
@@ -57,41 +56,41 @@ contract Voting {
     }
 
     modifier onlyAdmin {
-        require(msg.sender == admin, "Only admin can perform this action!");
+        // require(msg.sender == rewarder.votingAdmin(), "Only admin can perform this action!");
         _;
     }
 
     modifier onlyRegularUser {
-        require(msg.sender != admin, "Only regular users can perform this action!");
+        require(msg.sender != rewarder.votingAdmin(), "Only regular users can perform this action!");
         _;
     }
 
     constructor() {
-        admin = msg.sender;
         currentVotingState = VotingState.NotStarted;
         startVotingTimestamp = block.timestamp + 2 days;
     }
+    
 
     // internal function to add funds to the Rewarder
-    function addFundsToRewarder(uint256 _fundsForWinner) internal onlyAdmin {
+    function addFundsToRewarder() internal onlyAdmin {
         require(address(rewarder) != address(0), "Rewarder contract has not been initialized!");
-        require(_fundsForWinner > 0, "Amount must be greater than 0!");
-        require(address(admin).balance >= _fundsForWinner, "Insufficient balance in Voting contract!");
+        require(msg.value > 0, "Amount must be greater than 0!");
+        require(rewarder.votingAdmin().balance >= msg.value, "Insufficient balance in Voting contract!");
 
-        rewarder.addFundsForWinner{value: _fundsForWinner}();
+        rewarder.addFundsForWinner{value: msg.value}();
     }
 
-    function initializeRewarder(address payable _rewarderAddress, uint256 _fundsForWinner) public onlyAdmin {
+    function initializeRewarder(address payable _rewarderAddress) public payable onlyAdmin {
         require(address(rewarder) == address(0), "Rewarder contract has already been initialized!");
         rewarder = Rewarder(_rewarderAddress);
 
-        addFundsToRewarder(_fundsForWinner); 
+        addFundsToRewarder(); 
     }
 
     function startVoting() public onlyIfVotingNotStarted onlyAdmin payable {
         if (block.timestamp != startVotingTimestamp) {
             require(msg.value >= adminStartVoteCost, "Insufficient payment to start voting early!");
-            addFundsToRewarder(adminStartVoteCost); 
+            // addFundsToRewarder(adminStartVoteCost); 
         }
 
         currentVotingState = VotingState.Started;
@@ -105,7 +104,7 @@ contract Voting {
 
         if (block.timestamp < halfway || block.timestamp > stopVotingTimestamp) {
             require(msg.value >= adminEndVoteCost, "Insufficient payment to end voting early");
-            addFundsToRewarder(adminEndVoteCost); 
+            // addFundsToRewarder(adminEndVoteCost); 
         }
 
         currentVotingState = VotingState.Ended;
