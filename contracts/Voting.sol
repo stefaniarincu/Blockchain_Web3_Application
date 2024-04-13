@@ -16,15 +16,16 @@ contract Voting {
 
     struct Voter {
         mapping(uint256 => bool) hasVotedFor;
-        uint256 gasSpent;
+        uint256 numPersonsVoted;
     }
 
-    mapping(address => bool) public hasCandidated; 
+    mapping(address => bool) public hasCandidated;
     mapping(address => Voter) public voters;
 
     address public admin;
-    Candidate[] public candidateList;
-    VotingState public currentState;
+    Candidate[] public candidatesList;
+    VotingState public currentVotingState;
+    uint256 minBalance;
 
     uint256 public startVotingTimestamp;
     uint256 public stopVotingTimestamp;
@@ -41,17 +42,17 @@ contract Voting {
     event EndVote(uint256 endVotingTimestamp);
 
     modifier onlyIfVotingNotStarted {
-        require(currentState == VotingState.NotStarted, "Voting has already started or ended!");
+        require(currentVotingState == VotingState.NotStarted, "Voting has already started or ended!");
         _;
     }
 
     modifier onlyIfVotingStarted {
-        require(currentState == VotingState.Started, "Voting has not started!");
+        require(currentVotingState == VotingState.Started, "Voting has not started!");
         _;
     }
 
     modifier onlyIfVotingEnded {
-        require(currentState == VotingState.Ended, "Voting has not ended!");
+        require(currentVotingState == VotingState.Ended, "Voting has not ended!");
         _;
     }
 
@@ -65,22 +66,35 @@ contract Voting {
         _;
     }
 
-    constructor(address payable _rewarderAddress) payable {
+    constructor() {
         admin = msg.sender;
-        currentState = VotingState.NotStarted;
+        currentVotingState = VotingState.NotStarted;
         startVotingTimestamp = block.timestamp + 2 days;
+    }
 
+    // internal function to add funds to the Rewarder
+    function addFundsToRewarder(uint256 _fundsForWinner) internal onlyAdmin {
+        require(address(rewarder) != address(0), "Rewarder contract has not been initialized!");
+        require(_fundsForWinner > 0, "Amount must be greater than 0!");
+        require(address(this).balance >= _fundsForWinner, "Insufficient balance in Voting contract!");
+
+        rewarder.addFundsForWinner{value: _fundsForWinner}();
+    }
+
+    function initializeRewarder(address payable _rewarderAddress, uint256 _fundsForWinner) public onlyAdmin {
+        require(address(rewarder) == address(0), "Rewarder contract has already been initialized!");
         rewarder = Rewarder(_rewarderAddress);
-        adminPayRewarder(msg.value); 
+
+        addFundsToRewarder(_fundsForWinner); 
     }
 
     function startVoting() public onlyIfVotingNotStarted onlyAdmin payable {
         if (block.timestamp != startVotingTimestamp) {
-            require(msg.value >= adminStartVoteCost, "Insufficient payment to start voting early");
-            adminPayRewarder(msg.value); 
+            require(msg.value >= adminStartVoteCost, "Insufficient payment to start voting early!");
+            addFundsToRewarder(adminStartVoteCost); 
         }
 
-        currentState = VotingState.Started;
+        currentVotingState = VotingState.Started;
         startVotingTimestamp = block.timestamp;
 
         emit StartVote(startVotingTimestamp);
@@ -91,10 +105,10 @@ contract Voting {
 
         if (block.timestamp < halfway || block.timestamp > stopVotingTimestamp) {
             require(msg.value >= adminEndVoteCost, "Insufficient payment to end voting early");
-            adminPayRewarder(msg.value);
+            addFundsToRewarder(adminEndVoteCost); 
         }
 
-        currentState = VotingState.Ended;
+        currentVotingState = VotingState.Ended;
         stopVotingTimestamp = block.timestamp;
 
         emit EndVote(stopVotingTimestamp);
@@ -103,39 +117,36 @@ contract Voting {
     function addCandidate(string memory _name, string memory _description) public onlyIfVotingNotStarted onlyRegularUser {
         require(!hasCandidated[msg.sender], "You have already candidated!");
 
-        uint256 newCandidateId = candidateList.length;
+        uint256 newCandidateId = candidatesList.length;
 
-        candidateList.push(Candidate(newCandidateId, msg.sender, _name, _description, 0));
-        hasCandidated[msg.sender] = true; 
+        candidatesList.push(Candidate(newCandidateId, msg.sender, _name, _description, 0));
+        hasCandidated[msg.sender] = true;
+        
         emit SomeoneCandidated(newCandidateId, msg.sender, _name);
     }
 
     function vote(uint256[] memory _candidateIds) public onlyIfVotingStarted {
-        require(_candidateIds.length > 0, "No candidates selected for voting");
-
-        uint256 totalGasCost = estimateGasCost(_candidateIds);
-
-        require(msg.sender.balance >= totalGasCost, "Insufficient balance to cover gas costs");
+        require(_candidateIds.length > 0, "No candidates selected for voting!");
 
         for (uint256 i = 0; i < _candidateIds.length; i++) {
             uint256 _candidateId = _candidateIds[i];
-            require(_candidateId < candidateList.length, "Invalid candidate ID");
-            require(!voters[msg.sender].hasVotedFor[_candidateId], "You have already voted for this candidate");
+            require(_candidateId < candidatesList.length, "Invalid candidate ID!");
+            require(!voters[msg.sender].hasVotedFor[_candidateId], "You have already voted for this candidate!");
 
-            candidateList[_candidateId].numVotes++;
+            candidatesList[_candidateId].numVotes++;
             voters[msg.sender].hasVotedFor[_candidateId] = true;
         }
 
-        emit SomeoneVoted(msg.sender, _candidateIds[0]); 
+        emit SomeoneVoted(msg.sender, _candidateIds[0]);
     }
 
     function getWinner() public view returns (uint256) {
         uint256 maxVotes = 0;
         uint256 winningCandidateId;
 
-        for (uint256 i = 0; i < candidateList.length; i++) {
-            if (candidateList[i].numVotes > maxVotes) {
-                maxVotes = candidateList[i].numVotes;
+        for (uint256 i = 0; i < candidatesList.length; i++) {
+            if (candidatesList[i].numVotes > maxVotes) {
+                maxVotes = candidatesList[i].numVotes;
                 winningCandidateId = i;
             }
         }
@@ -143,42 +154,5 @@ contract Voting {
         return winningCandidateId;
     }
 
-    function adminPayRewarder(uint256 _amount) private {
-        payable(address(rewarder)).transfer(_amount);
-    }
-
-    function setAdmin(address _newAdmin) public onlyAdmin {
-        admin = _newAdmin;
-    }
-
-    function setAdminStartVoteCost(uint256 _newCost) public onlyAdmin {
-        adminStartVoteCost = _newCost;
-    }
-
-    function setAdminEndVoteCost(uint256 _newCost) public onlyAdmin {
-        adminEndVoteCost = _newCost;
-    }
-
-    function setCandidates(uint256 _candidateId, string memory _name, string memory _description) public onlyAdmin {
-        require(_candidateId < candidateList.length, "Invalid candidate ID");
-
-        candidateList[_candidateId].name = _name;
-        candidateList[_candidateId].description = _description;
-    }
-
-    // Function to set the Rewarder contract address
-    function setRewarderContract(address payable _rewarderAddress) public onlyAdmin {
-        rewarder = Rewarder(_rewarderAddress);
-    }
-
-    // Function to transfer any remaining Ether to the admin
-    function withdrawRemainingBalance() public onlyAdmin {
-        payable(admin).transfer(address(this).balance);
-    }
-
-    // Internal function to estimate gas cost for multiple votes
-    function estimateGasCost(uint256[] memory _candidateIds) internal view returns (uint256) {
-        uint256 totalGasCost = _candidateIds.length * gasleft() * tx.gasprice;
-        return totalGasCost;
-    }
+    receive() external payable {}
 }

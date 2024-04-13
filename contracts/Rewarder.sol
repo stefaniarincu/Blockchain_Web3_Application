@@ -2,41 +2,39 @@
 pragma solidity ^0.8.18;
 
 contract Rewarder {
-    address public admin;
-    mapping(address => uint256) public rewards;
+    address public votingAdmin;
+    uint256 public totalPrize;
 
-    event RewardSent(address indexed recipient, uint256 amount);
+    event PrizeAdded(uint256 amount);
+    event WinnerDeclared(address winner, uint256 prizeAmount);
 
-    modifier onlyAdmin {
-        require(msg.sender == admin, "Only admin can perform this action");
+    modifier onlyVotingAdmin {
+        require(msg.sender == votingAdmin, "Only voting admin can perform this action!");
         _;
     }
 
-    constructor() {
-        admin = msg.sender;
+    function initializeRewarder(address _votingAdmin) external {
+        require(votingAdmin == address(0), "Reward contract has already been initialized!");
+        votingAdmin = _votingAdmin;
+        totalPrize += 0;
     }
 
-    receive() external payable {}
+    function addFundsForWinner() external payable onlyVotingAdmin {
+        require(msg.value > 0, "Cannot add zero funds!");
 
-    function setAdmin(address _newAdmin) public onlyAdmin {
-        admin = _newAdmin;
+        totalPrize += msg.value;
+        emit PrizeAdded(msg.value);
     }
 
-    function rewardWinner(address payable _winner) public onlyAdmin {
-        require(rewards[_winner] > 0, "No reward to send");
+    function sendPrizeToWinner(address _winner) external onlyVotingAdmin {
+        require(totalPrize > 0, "No prize available to be awarded!");
+        require(_winner != address(0), "Invalid winner address!");
 
-        uint256 amountToSend = rewards[_winner];
-        rewards[_winner] = 0; 
-        _winner.transfer(amountToSend);
-
-        emit RewardSent(_winner, amountToSend);
+        payable(_winner).transfer(totalPrize);
+        emit WinnerDeclared(_winner, totalPrize);
     }
 
-    function addReward(address _recipient, uint256 _amount) public onlyAdmin {
-        rewards[_recipient] += _amount;
-    }
-
-    function withdrawRemainingBalance() public onlyAdmin {
-        payable(admin).transfer(address(this).balance);
+    receive() external payable {
+        emit PrizeAdded(msg.value);
     }
 }
