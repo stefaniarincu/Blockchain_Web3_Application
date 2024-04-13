@@ -76,7 +76,7 @@ contract Voting {
     function addFundsToRewarder(uint256 _fundsForWinner) internal onlyAdmin {
         require(address(rewarder) != address(0), "Rewarder contract has not been initialized!");
         require(_fundsForWinner > 0, "Amount must be greater than 0!");
-        require(address(this).balance >= _fundsForWinner, "Insufficient balance in Voting contract!");
+        require(address(admin).balance >= _fundsForWinner, "Insufficient balance in Voting contract!");
 
         rewarder.addFundsForWinner{value: _fundsForWinner}();
     }
