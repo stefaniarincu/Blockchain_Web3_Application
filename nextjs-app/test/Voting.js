@@ -302,6 +302,17 @@ describe("Voting", async function () {
         (await voting.getWinnerCandidateId()) == 1,
         "Winner should be Alice"
       ).to.equal(true);
+
+      const aliceBalance = await ethers.provider.getBalance(acc2.address);
+      await rewarder.sendPrizeToWinner();
+      const aliceBalanceAfterPrize = await ethers.provider.getBalance(
+        acc2.address
+      );
+
+      expect(
+        aliceBalanceAfterPrize > aliceBalance,
+        "Alice should receive prize"
+      ).to.equal(true);
     });
   });
 });
