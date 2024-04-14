@@ -56,7 +56,7 @@ contract Voting {
     }
 
     modifier onlyAdmin {
-        // require(msg.sender == rewarder.votingAdmin(), "Only admin can perform this action!");
+        require(msg.sender == rewarder.votingAdmin(), "Only admin can perform this action!");
         _;
     }
 
@@ -65,9 +65,17 @@ contract Voting {
         _;
     }
 
-    constructor() {
+    constructor(address payable _rewarderAddress) {
+        require(_rewarderAddress != address(0), "Invalid rewarder address!");
+        
+        rewarder = Rewarder(_rewarderAddress);
+        require(rewarder.votingAdmin() == msg.sender, "You must be the owner of the rewarder contract!");
+
+        rewarder.linkVotingContract(payable(address(this)));
+
         currentVotingState = VotingState.NotStarted;
         startVotingTimestamp = block.timestamp + 2 days;
+        stopVotingTimestamp = startVotingTimestamp + 1 days;
     }
     
 
@@ -80,17 +88,11 @@ contract Voting {
         rewarder.addFundsForWinner{value: msg.value}();
     }
 
-    function initializeRewarder(address payable _rewarderAddress) public payable onlyAdmin {
-        require(address(rewarder) == address(0), "Rewarder contract has already been initialized!");
-        rewarder = Rewarder(_rewarderAddress);
-
-        addFundsToRewarder(); 
-    }
-
     function startVoting() public onlyIfVotingNotStarted onlyAdmin payable {
         if (block.timestamp != startVotingTimestamp) {
             require(msg.value >= adminStartVoteCost, "Insufficient payment to start voting early!");
-            // addFundsToRewarder(adminStartVoteCost); 
+            // addFundsToRewarder(adminStartVoteCost);
+            addFundsToRewarder();
         }
 
         currentVotingState = VotingState.Started;
@@ -104,7 +106,8 @@ contract Voting {
 
         if (block.timestamp < halfway || block.timestamp > stopVotingTimestamp) {
             require(msg.value >= adminEndVoteCost, "Insufficient payment to end voting early");
-            // addFundsToRewarder(adminEndVoteCost); 
+            // addFundsToRewarder(adminEndVoteCost);
+            addFundsToRewarder();
         }
 
         currentVotingState = VotingState.Ended;
@@ -139,7 +142,7 @@ contract Voting {
         emit SomeoneVoted(msg.sender, _candidateIds[0]);
     }
 
-    function getWinner() public view returns (uint256) {
+    function getWinnerCandidateId() public onlyIfVotingEnded view returns (uint256) {
         uint256 maxVotes = 0;
         uint256 winningCandidateId;
 
@@ -151,6 +154,10 @@ contract Voting {
         }
 
         return winningCandidateId;
+    }
+
+    function getWinnerAddress() public onlyIfVotingEnded view returns (address) {
+        return candidatesList[getWinnerCandidateId()].candidateAddress;
     }
 
     receive() external payable {}

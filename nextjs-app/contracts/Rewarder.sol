@@ -1,36 +1,50 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.18;
 
+import "./Voting.sol";
+
 contract Rewarder {
     address public votingAdmin;
-    address public votingContract;
+    Voting public votingContract;
     uint256 public totalPrize;
 
     event PrizeAdded(uint256 amount);
     event WinnerDeclared(address winner, uint256 prizeAmount);
 
+    constructor() payable {
+        require(msg.value > 0, "Cannot initialize reward contract with zero funds!");
+        votingAdmin = msg.sender;
+        totalPrize = msg.value;
+    }
+
     modifier onlyVotingAdmin {
-        // require(msg.sender == votingAdmin, "Only voting admin can perform this action!");
+        require(msg.sender == votingAdmin, "Only voting admin can perform this action!");
         _;
     }
 
-    function initializeRewarder(address _votingContract, address _votingAdmin) external {
-        require(votingAdmin == address(0), "Reward contract has already been initialized!");
-        votingContract = _votingContract;
-        votingAdmin = _votingAdmin;
-        totalPrize = 0;
+    modifier onlyVotingAdminOrContract {
+        require(msg.sender == votingAdmin || msg.sender == address(votingContract), "Only voting admin or voting contract can perform this action!");
+        _;
     }
 
-    function addFundsForWinner() external payable {
-        // require(msg.value > 0, "Cannot add zero funds!");
-
-        // totalPrize += msg.value;
-        // emit PrizeAdded(msg.value);
+    // Can only be called by a voting contract, which to be created needs
+    // to be linked to this rewarder contract
+    function linkVotingContract(address payable _votingContract) external {
+        require(address(votingContract) == address(0), "A voting contract has already been linked!");
+        votingContract = Voting(_votingContract);
     }
 
-    function sendPrizeToWinner(address _winner) external onlyVotingAdmin {
-        require(totalPrize > 0, "No prize available to be awarded!");
-        require(_winner != address(0), "Invalid winner address!");
+    function addFundsForWinner() external payable onlyVotingAdminOrContract {
+        require(msg.value > 0, "Cannot add zero funds!");
+
+        totalPrize += msg.value;
+        emit PrizeAdded(msg.value);
+    }
+
+    function sendPrizeToWinner() external onlyVotingAdmin {
+        require(address(votingContract) != address(0), "No voting contract linked!");
+
+        address _winner = votingContract.getWinnerAddress();
 
         payable(_winner).transfer(totalPrize);
         emit WinnerDeclared(_winner, totalPrize);

@@ -1,0 +1,86 @@
+const { expect } = require("chai");
+
+describe("Voting", async function () {
+  describe("Deployment", async function () {
+    it("Should initialize", async function () {
+      const [admin] = await ethers.getSigners();
+      const INITIAL_PRIZE = 50;
+
+      const Rewarder = await ethers.getContractFactory("Rewarder");
+      const rewarder = await Rewarder.deploy({ value: INITIAL_PRIZE });
+
+      const Voting = await ethers.getContractFactory("Voting");
+      const voting = await Voting.deploy(await rewarder.getAddress());
+
+      expect(await voting.rewarder(), "Incorrect rewarder address").to.equal(
+        await rewarder.getAddress()
+      );
+    });
+
+    it("Should fail if the rewarder has different voting admin", async function () {
+      const [admin, otherAccount] = await ethers.getSigners();
+      const Rewarder = await ethers.getContractFactory("Rewarder");
+      const rewarder = await Rewarder.deploy({ value: 50 });
+
+      const Voting = await ethers.getContractFactory("Voting");
+      await expect(
+        Voting.connect(otherAccount).deploy(await rewarder.getAddress())
+      ).to.be.revertedWith("You must be the owner of the rewarder contract!");
+    });
+  });
+
+  describe("Start voting", async function () {
+    it("Should start voting", async function () {
+      const INITIAL_PRIZE = 50;
+
+      const Rewarder = await ethers.getContractFactory("Rewarder");
+      const rewarder = await Rewarder.deploy({ value: INITIAL_PRIZE });
+
+      const Voting = await ethers.getContractFactory("Voting");
+      const voting = await Voting.deploy(await rewarder.getAddress());
+
+      const COST = await voting.adminStartVoteCost();
+
+      expect(
+        (await voting.currentVotingState()) == 0,
+        "Voting should be in not started phase"
+      ).to.equal(true);
+
+      await voting.startVoting({ value: COST });
+
+      expect(
+        (await voting.currentVotingState()) == 1,
+        "Voting not started"
+      ).to.equal(true);
+    });
+  });
+
+  describe("Stop voting", async function () {
+    it("Should stop voting", async function () {
+      const INITIAL_PRIZE = 50;
+
+      const Rewarder = await ethers.getContractFactory("Rewarder");
+      const rewarder = await Rewarder.deploy({ value: INITIAL_PRIZE });
+
+      const Voting = await ethers.getContractFactory("Voting");
+      const voting = await Voting.deploy(await rewarder.getAddress());
+
+      const COST_START = await voting.adminStartVoteCost();
+      const COST_STOP = await voting.adminEndVoteCost();
+
+      await voting.startVoting({ value: COST_START });
+
+      expect(
+        (await voting.currentVotingState()) == 1,
+        "Voting should be in started phase"
+      ).to.equal(true);
+
+      await voting.endVoting({ value: COST_STOP });
+
+      expect(
+        (await voting.currentVotingState()) == 2,
+        "Voting not stopped"
+      ).to.equal(true);
+    });
+  });
+});
