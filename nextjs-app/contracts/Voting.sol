@@ -41,7 +41,7 @@ contract Voting {
     event EndVote(uint256 endVotingTimestamp);
 
     modifier onlyIfVotingNotStarted {
-        require(currentVotingState == VotingState.NotStarted, "Voting has already started or ended!");
+        require(currentVotingState == VotingState.NotStarted, "Voting has already started!");
         _;
     }
 
@@ -116,7 +116,7 @@ contract Voting {
         emit EndVote(stopVotingTimestamp);
     }
 
-    function addCandidate(string memory _name, string memory _description) public onlyIfVotingNotStarted onlyRegularUser {
+    function candidate(string memory _name, string memory _description) public onlyIfVotingNotStarted onlyRegularUser {
         require(!hasCandidated[msg.sender], "You have already candidated!");
 
         uint256 newCandidateId = candidatesList.length;
@@ -134,6 +134,7 @@ contract Voting {
             uint256 _candidateId = _candidateIds[i];
             require(_candidateId < candidatesList.length, "Invalid candidate ID!");
             require(!voters[msg.sender].hasVotedFor[_candidateId], "You have already voted for this candidate!");
+            require(msg.sender != candidatesList[_candidateId].candidateAddress, "You cannot vote for yourself!");
 
             candidatesList[_candidateId].numVotes++;
             voters[msg.sender].hasVotedFor[_candidateId] = true;
