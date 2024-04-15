@@ -3,7 +3,6 @@
 import React, { useState, useEffect, createContext, ReactNode } from "react";
 import Web3Modal from "web3modal";
 import { ethers } from "ethers";
-import axios from "axios";
 
 import {
   VotingABI,
@@ -24,7 +23,7 @@ export const ContractProvider = ({ children }: { children: ReactNode }) => {
   const [weiPrize, setWeiPrize] = useState<number>(0);
 
   const prepareContracts = async () => {
-    const provider = new ethers.BrowserProvider(window.ethereum);
+    const provider = new ethers.JsonRpcProvider();
 
     const votingContractLocal = new ethers.Contract(
       VotingAddress,
@@ -63,7 +62,7 @@ export const ContractProvider = ({ children }: { children: ReactNode }) => {
 
   const fetchAdminAccount = async (rewarderContractLocal: any) => {
     const adminAccount = await rewarderContractLocal.votingAdmin();
-    setAdminAccount(adminAccount);
+    setAdminAccount(adminAccount.toLowerCase());
   };
 
   const checkIfWalletIsConnected = async () => {
@@ -120,6 +119,11 @@ export const ContractProvider = ({ children }: { children: ReactNode }) => {
     return candidates;
   };
 
+  const submitCandidate = async (name: string, description: string) => {
+    const tx = await votingContract.candidate(name, description);
+    return tx;
+  };
+
   return (
     <ContractContext.Provider
       value={{
@@ -131,6 +135,7 @@ export const ContractProvider = ({ children }: { children: ReactNode }) => {
         startingTime,
         endingTime,
         weiPrize,
+        submitCandidate,
       }}
     >
       {children}
