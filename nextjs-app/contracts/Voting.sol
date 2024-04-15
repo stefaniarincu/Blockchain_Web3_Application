@@ -26,7 +26,6 @@ contract Voting {
     mapping(address => Voter) public voters;
 
     Candidate[] public candidatesList;
-    VotingState public currentVotingState;
     uint256[] private winnersCandidateIdList;
     uint256 minBalance;
 
@@ -45,17 +44,17 @@ contract Voting {
     event EndVote(uint256 endVotingTimestamp);
 
     modifier onlyIfVotingNotStarted {
-        require(currentVotingState == VotingState.NotStarted, "Voting has already started!");
+        require(checkVotingCurrentState() == VotingState.NotStarted, "Voting has already started!");
         _;
     }
 
     modifier onlyIfVotingStarted {
-        require(currentVotingState == VotingState.Started, "Voting has not started!");
+        require(checkVotingCurrentState() == VotingState.Started, "Voting has not started!");
         _;
     }
 
     modifier onlyIfVotingEnded {
-        require(currentVotingState == VotingState.Ended, "Voting has not ended!");
+        require(checkVotingCurrentState() == VotingState.Ended, "Voting has not ended!");
         _;
     }
 
@@ -77,9 +76,18 @@ contract Voting {
 
         rewarder.linkVotingContract(payable(address(this)));
 
-        currentVotingState = VotingState.NotStarted;
         startVotingTimestamp = block.timestamp + 2 days;
         stopVotingTimestamp = startVotingTimestamp + 1 days;
+    }
+
+    function checkVotingCurrentState() public view returns (VotingState) {
+        if (block.timestamp < startVotingTimestamp) {
+            return VotingState.NotStarted;
+        } else if (block.timestamp < stopVotingTimestamp) {
+            return VotingState.Started;
+        } else {
+            return VotingState.Ended;
+        }
     }
     
 
@@ -98,7 +106,6 @@ contract Voting {
             addFundsToRewarder();
         }
 
-        currentVotingState = VotingState.Started;
         startVotingTimestamp = block.timestamp;
 
         emit StartVote(startVotingTimestamp);
@@ -112,7 +119,6 @@ contract Voting {
             addFundsToRewarder();
         }
 
-        currentVotingState = VotingState.Ended;
         stopVotingTimestamp = block.timestamp;
 
         emit EndVote(stopVotingTimestamp);
@@ -171,6 +177,35 @@ contract Voting {
         }
 
         return winnersCandidateIdList;  
+    }
+
+    // for testing purposes only
+    function debugging_getWinners() view public onlyIfVotingEnded returns (uint256[] memory) {
+        uint256[] memory _winnersCandidateIdList;
+
+        uint256 maxVotes = 0;
+        uint256 countWinners = 0;
+
+        for (uint256 i = 0; i < candidatesList.length; i++) {
+            if (candidatesList[i].numVotes > maxVotes) {
+                maxVotes = candidatesList[i].numVotes;
+                countWinners = 1; 
+            } else if (candidatesList[i].numVotes == maxVotes) {
+                countWinners++;
+            }
+        }
+
+        _winnersCandidateIdList = new uint256[](countWinners);
+        uint256 currentIndex = 0;
+
+        for (uint256 i = 0; i < candidatesList.length; i++) {
+            if (candidatesList[i].numVotes == maxVotes) {
+                _winnersCandidateIdList[currentIndex] = i;
+                currentIndex++;
+            }
+        }
+
+        return _winnersCandidateIdList;  
     }
 
     function getWinnerAddress(uint256 _winnerId) public onlyIfVotingEnded view returns (address) {

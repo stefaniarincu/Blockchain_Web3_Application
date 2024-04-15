@@ -42,14 +42,14 @@ describe("Voting", async function () {
       const COST_START = await voting.adminStartVoteCost();
 
       expect(
-        (await voting.currentVotingState()) == 0,
+        (await voting.checkVotingCurrentState()) == 0,
         "Voting should be in not started phase"
       ).to.equal(true);
 
       await voting.startVoting({ value: COST_START });
 
       expect(
-        (await voting.currentVotingState()) == 1,
+        (await voting.checkVotingCurrentState()) == 1,
         "Voting not started"
       ).to.equal(true);
     });
@@ -66,16 +66,18 @@ describe("Voting", async function () {
       const COST_START = 2;
 
       expect(
-        (await voting.currentVotingState()) == 0,
+        (await voting.checkVotingCurrentState()) == 0,
         "Voting should be in not started phase"
       ).to.equal(true);
 
       await expect(
         voting.startVoting({ value: COST_START })
-      ).to.be.revertedWith("Insufficient payment to start voting early! You need at least 2.100000000000000000 ethers.");
+      ).to.be.revertedWith(
+        "Insufficient payment to start voting early! You need at least 2.100000000000000000 ethers."
+      );
 
       expect(
-        (await voting.currentVotingState()) == 0,
+        (await voting.checkVotingCurrentState()) == 0,
         "Voting should be in not started phase"
       ).to.equal(true);
     });
@@ -97,16 +99,16 @@ describe("Voting", async function () {
       await voting.startVoting({ value: COST_START });
 
       expect(
-        (await voting.currentVotingState()) == 1,
+        (await voting.checkVotingCurrentState()) == 1,
         "Voting should be in started phase"
       ).to.equal(true);
 
       await voting.endVoting({ value: COST_STOP });
 
       expect(
-        (await voting.currentVotingState()) == 2,
+        await voting.checkVotingCurrentState(),
         "Voting not stopped"
-      ).to.equal(true);
+      ).to.equal(2);
     });
 
     it("Should NOT stop voting", async function () {
@@ -124,16 +126,16 @@ describe("Voting", async function () {
       await voting.startVoting({ value: COST_START });
 
       expect(
-        (await voting.currentVotingState()) == 1,
+        (await voting.checkVotingCurrentState()) == 1,
         "Voting should be in started phase"
       ).to.equal(true);
 
-      await expect(
-        voting.endVoting({ value: COST_STOP })
-      ).to.be.revertedWith("Insufficient payment to end voting early! You need at least 2.100000000000000000 ethers.");
+      await expect(voting.endVoting({ value: COST_STOP })).to.be.revertedWith(
+        "Insufficient payment to end voting early! You need at least 2.100000000000000000 ethers."
+      );
 
       expect(
-        (await voting.currentVotingState()) == 1,
+        (await voting.checkVotingCurrentState()) == 1,
         "Voting should be in started phase"
       ).to.equal(true);
     });
@@ -179,7 +181,7 @@ describe("Voting", async function () {
       await voting.startVoting({ value: COST_START });
 
       expect(
-        (await voting.currentVotingState()) == 1,
+        (await voting.checkVotingCurrentState()) == 1,
         "Voting should be in started phase"
       ).to.equal(true);
 
@@ -239,7 +241,7 @@ describe("Voting", async function () {
       await voting.startVoting({ value: COST_START });
 
       expect(
-        (await voting.currentVotingState()) == 1,
+        (await voting.checkVotingCurrentState()) == 1,
         "Voting should be in started phase"
       ).to.equal(true);
 
@@ -266,7 +268,7 @@ describe("Voting", async function () {
       await voting.endVoting({ value: COST_STOP });
 
       expect(
-        (await voting.currentVotingState()) == 2,
+        (await voting.checkVotingCurrentState()) == 2,
         "Voting not stopped"
       ).to.equal(true);
     });
@@ -322,7 +324,7 @@ describe("Voting", async function () {
       await voting.startVoting({ value: COST_START });
 
       expect(
-        (await voting.currentVotingState()) == 1,
+        (await voting.checkVotingCurrentState()) == 1,
         "Voting should be in started phase"
       ).to.equal(true);
 
@@ -349,14 +351,15 @@ describe("Voting", async function () {
       await voting.endVoting({ value: COST_STOP });
 
       expect(
-        (await voting.currentVotingState()) == 2,
+        (await voting.checkVotingCurrentState()) == 2,
         "Voting not stopped"
       ).to.equal(true);
 
-      expect(
-        (await voting.getWinners()[0]) == 1,
-        "Winner should be Alice"
-      ).to.equal(true);
+      const winners = await voting.debugging_getWinners();
+
+      expect(winners.length == 1, "There should be one winner").to.equal(true);
+
+      expect(winners[0] == 1, "Winner should be Alice").to.equal(true);
 
       const aliceBalance = await ethers.provider.getBalance(acc2.address);
       await rewarder.sendPrizeToWinner();
@@ -421,7 +424,7 @@ describe("Voting", async function () {
       await voting.startVoting({ value: COST_START });
 
       expect(
-        (await voting.currentVotingState()) == 1,
+        (await voting.checkVotingCurrentState()) == 1,
         "Voting should be in started phase"
       ).to.equal(true);
 
@@ -449,7 +452,7 @@ describe("Voting", async function () {
       await voting.endVoting({ value: COST_STOP });
 
       expect(
-        (await voting.currentVotingState()) == 2,
+        (await voting.checkVotingCurrentState()) == 2,
         "Voting not stopped"
       ).to.equal(true);
 
