@@ -27,7 +27,6 @@ contract Voting {
 
     Candidate[] public candidatesList;
     uint256[] private winnersCandidateIdList = new uint256[](0);
-    uint256 minBalance;
 
     uint256 public startVotingTimestamp;
     uint256 public stopVotingTimestamp;
@@ -69,7 +68,7 @@ contract Voting {
     }
 
     modifier onlyIfAtLeastTwoCandidates {
-        require(candidatesList.length > 1, "Can not start voting with less than two candidates!");
+        require(candidatesList.length > 1, "Cannot start voting with less than two candidates!");
         _;
     }
 
