@@ -67,7 +67,7 @@ contract Rewarder {
         emit WinnerDeclared(_winner, totalPrize);
     }
 
-    function sendPrizeToWinner() external onlyVotingAdmin {
+    function sendPrizeToWinner() public onlyVotingAdmin {
         return sendPrizeToWinner(999);
     }
 

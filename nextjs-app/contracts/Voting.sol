@@ -26,7 +26,7 @@ contract Voting {
     mapping(address => Voter) public voters;
 
     Candidate[] public candidatesList;
-    uint256[] private winnersCandidateIdList;
+    uint256[] private winnersCandidateIdList = new uint256[](0);
     uint256 minBalance;
 
     uint256 public startVotingTimestamp;
@@ -180,7 +180,7 @@ contract Voting {
     }
 
     // for testing purposes only
-    function debugging_getWinners() view public onlyIfVotingEnded returns (uint256[] memory) {
+    function debuggingGetWinners() view public onlyIfVotingEnded returns (uint256[] memory) {
         uint256[] memory _winnersCandidateIdList;
 
         uint256 maxVotes = 0;
