@@ -2,8 +2,11 @@
 pragma solidity ^0.8.18;
 
 import "./Rewarder.sol";
+import "@openzeppelin/contracts/utils/Strings.sol";
 
 contract Voting {
+    using Strings for uint256;
+
     enum VotingState { NotStarted, Started, Ended }
 
     struct Candidate {
@@ -24,13 +27,14 @@ contract Voting {
 
     Candidate[] public candidatesList;
     VotingState public currentVotingState;
+    uint256[] private winnersCandidateIdList;
     uint256 minBalance;
 
     uint256 public startVotingTimestamp;
     uint256 public stopVotingTimestamp;
 
-    uint256 public adminStartVoteCost = 0.1 ether; // Cost for admin to start voting before the established date
-    uint256 public adminEndVoteCost = 0.1 ether;   // Cost for admin to end voting before the established date
+    uint256 public adminStartVoteCost = 2.1 ether; // Cost for admin to start voting before the established date
+    uint256 public adminEndVoteCost = 2.1 ether;   // Cost for admin to end voting before the established date
 
     Rewarder public rewarder;
 
@@ -83,15 +87,14 @@ contract Voting {
     function addFundsToRewarder() internal onlyAdmin {
         require(address(rewarder) != address(0), "Rewarder contract has not been initialized!");
         require(msg.value > 0, "Amount must be greater than 0!");
-        require(rewarder.votingAdmin().balance >= msg.value, "Insufficient balance in Voting contract!");
+        //require(rewarder.votingAdmin().balance >= msg.value, "Insufficient balance in Voting contract!");
 
         rewarder.addFundsForWinner{value: msg.value}();
     }
 
     function startVoting() public onlyIfVotingNotStarted onlyAdmin payable {
         if (block.timestamp != startVotingTimestamp) {
-            require(msg.value >= adminStartVoteCost, "Insufficient payment to start voting early!");
-            // addFundsToRewarder(adminStartVoteCost);
+            require(msg.value >= adminStartVoteCost, string(abi.encodePacked("Insufficient payment to start voting early! You need at least ", (adminStartVoteCost / 1 ether).toString(), ".", (adminStartVoteCost % 1 ether).toString(), " ethers.")));            
             addFundsToRewarder();
         }
 
@@ -105,8 +108,7 @@ contract Voting {
         uint256 halfway = startVotingTimestamp + (stopVotingTimestamp - startVotingTimestamp) / 2;
 
         if (block.timestamp < halfway || block.timestamp > stopVotingTimestamp) {
-            require(msg.value >= adminEndVoteCost, "Insufficient payment to end voting early");
-            // addFundsToRewarder(adminEndVoteCost);
+            require(msg.value >= adminEndVoteCost, string(abi.encodePacked("Insufficient payment to end voting early! You need at least ", (adminEndVoteCost / 1 ether).toString(), ".", (adminEndVoteCost % 1 ether).toString(), " ethers.")));
             addFundsToRewarder();
         }
 
@@ -143,22 +145,36 @@ contract Voting {
         emit SomeoneVoted(msg.sender, _candidateIds[0]);
     }
 
-    function getWinnerCandidateId() public onlyIfVotingEnded view returns (uint256) {
-        uint256 maxVotes = 0;
-        uint256 winningCandidateId;
+    function getWinners() public onlyIfVotingEnded returns (uint256[] memory) {
+        if (winnersCandidateIdList.length == 0){
+            uint256 maxVotes = 0;
+            uint256 countWinners = 0;
 
-        for (uint256 i = 0; i < candidatesList.length; i++) {
-            if (candidatesList[i].numVotes > maxVotes) {
-                maxVotes = candidatesList[i].numVotes;
-                winningCandidateId = i;
+            for (uint256 i = 0; i < candidatesList.length; i++) {
+                if (candidatesList[i].numVotes > maxVotes) {
+                    maxVotes = candidatesList[i].numVotes;
+                    countWinners = 1; 
+                } else if (candidatesList[i].numVotes == maxVotes) {
+                    countWinners++;
+                }
+            }
+
+            winnersCandidateIdList = new uint256[](countWinners);
+            uint256 currentIndex = 0;
+
+            for (uint256 i = 0; i < candidatesList.length; i++) {
+                if (candidatesList[i].numVotes == maxVotes) {
+                    winnersCandidateIdList[currentIndex] = i;
+                    currentIndex++;
+                }
             }
         }
 
-        return winningCandidateId;
+        return winnersCandidateIdList;  
     }
 
-    function getWinnerAddress() public onlyIfVotingEnded view returns (address) {
-        return candidatesList[getWinnerCandidateId()].candidateAddress;
+    function getWinnerAddress(uint256 _winnerId) public onlyIfVotingEnded view returns (address) {
+        return candidatesList[_winnerId].candidateAddress;
     }
 
     receive() external payable {}

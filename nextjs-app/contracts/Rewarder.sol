@@ -41,13 +41,34 @@ contract Rewarder {
         emit PrizeAdded(msg.value);
     }
 
-    function sendPrizeToWinner() external onlyVotingAdmin {
+    function _isInWinnersList(uint256[] memory _winners, uint256 _winnerCandidateId) private pure returns (bool) {
+        for (uint256 i = 0; i < _winners.length; i++) {
+            if (_winners[i] == _winnerCandidateId) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    function sendPrizeToWinner(uint256 _winnerCandidateId) public onlyVotingAdmin {
         require(address(votingContract) != address(0), "No voting contract linked!");
 
-        address _winner = votingContract.getWinnerAddress();
+        uint256[] memory winners = votingContract.getWinners();
+        address _winner;
+
+        if (winners.length == 1) {
+            _winner = votingContract.getWinnerAddress(winners[0]);
+        } else {
+            require(_isInWinnersList(winners, _winnerCandidateId), "Candidate ID not found in winners list!");
+            _winner = votingContract.getWinnerAddress(_winnerCandidateId);
+        }
 
         payable(_winner).transfer(totalPrize);
         emit WinnerDeclared(_winner, totalPrize);
+    }
+
+    function sendPrizeToWinner() external onlyVotingAdmin {
+        return sendPrizeToWinner(999);
     }
 
     receive() external payable {
