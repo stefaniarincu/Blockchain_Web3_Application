@@ -26,6 +26,11 @@ contract Voting {
     mapping(address => Voter) public voters;
 
     Candidate[] public candidatesList;
+
+    function getCandidatesList() public view returns (Candidate[] memory) {
+        return candidatesList;
+    }
+
     uint256[] private winnersCandidateIdList = new uint256[](0);
     uint256 minBalance;
 

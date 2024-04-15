@@ -32,17 +32,17 @@ const VotesTable = () => {
       date: "2021-10-02",
     },
     {
-      transactionId: "0x9abc",
+      transactionId: "0x9abd",
       vote: "Bob",
       date: "2021-10-03",
     },
     {
-      transactionId: "0xdef0",
+      transactionId: "0xbetr",
       vote: "Alice",
       date: "2021-10-04",
     },
     {
-      transactionId: "0x1234",
+      transactionId: "0x1237",
       vote: "Bob",
       date: "2021-10-05",
     },
@@ -52,7 +52,7 @@ const VotesTable = () => {
       date: "2021-10-06",
     },
     {
-      transactionId: "0x9abc",
+      transactionId: "0x9abe",
       vote: "Bob",
       date: "2021-10-07",
     },
@@ -62,7 +62,7 @@ const VotesTable = () => {
       date: "2021-10-08",
     },
     {
-      transactionId: "0x1234",
+      transactionId: "0x1235",
       vote: "Bob",
       date: "2021-10-09",
     },
@@ -77,7 +77,7 @@ const VotesTable = () => {
       date: "2021-10-11",
     },
     {
-      transactionId: "0xdef0",
+      transactionId: "0xasfd",
       vote: "Alice",
       date: "2021-10-12",
     },
