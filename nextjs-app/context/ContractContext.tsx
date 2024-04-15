@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState, useEffect, createContext, ReactNode } from "react";
-import Web3Modal from "web3modal";
 import { ethers } from "ethers";
 
 import {
@@ -21,20 +20,23 @@ export const ContractProvider = ({ children }: { children: ReactNode }) => {
   const [startingTime, setStartingTime] = useState<Date>();
   const [endingTime, setEndingTime] = useState<Date>();
   const [weiPrize, setWeiPrize] = useState<number>(0);
+  const [startVotePriceWei, setStartVotePriceWei] = useState<BigInt>();
+  const [endVotePriceWei, setEndVotePriceWei] = useState<BigInt>();
 
   const prepareContracts = async () => {
-    const provider = new ethers.JsonRpcProvider();
+    const provider = new ethers.BrowserProvider(window.ethereum);
+    const signer = await provider.getSigner();
 
     const votingContractLocal = new ethers.Contract(
       VotingAddress,
       VotingABI,
-      provider
+      signer
     );
 
     const rewarderContractLocal = new ethers.Contract(
       RewarderAddress,
       RewarderABI,
-      provider
+      signer
     );
 
     setVotingContract(votingContractLocal);
@@ -65,6 +67,14 @@ export const ContractProvider = ({ children }: { children: ReactNode }) => {
     setAdminAccount(adminAccount.toLowerCase());
   };
 
+  const fetchStartEndVotePrices = async (votingContractLocal: any) => {
+    const startVotePrice = await votingContractLocal.adminStartVoteCost();
+    const endVotePrice = await votingContractLocal.adminStartVoteCost();
+
+    setStartVotePriceWei(startVotePrice);
+    setEndVotePriceWei(endVotePrice);
+  };
+
   const checkIfWalletIsConnected = async () => {
     const { ethereum } = window as any;
 
@@ -86,6 +96,7 @@ export const ContractProvider = ({ children }: { children: ReactNode }) => {
         fetchTimeInformation(votingContract);
         fetchPrizeInformation(rewarderContract);
         fetchAdminAccount(rewarderContract);
+        fetchStartEndVotePrices(votingContract);
       });
     } else {
       console.log("No authorized account found");
@@ -124,6 +135,16 @@ export const ContractProvider = ({ children }: { children: ReactNode }) => {
     return tx;
   };
 
+  const startVoting = async () => {
+    const tx = await votingContract.startVoting({ value: startVotePriceWei });
+    return tx;
+  };
+
+  const stopVoting = async () => {
+    const tx = await votingContract.endVoting({ value: endVotePriceWei });
+    return tx;
+  };
+
   return (
     <ContractContext.Provider
       value={{
@@ -136,6 +157,8 @@ export const ContractProvider = ({ children }: { children: ReactNode }) => {
         endingTime,
         weiPrize,
         submitCandidate,
+        startVoting,
+        stopVoting,
       }}
     >
       {children}

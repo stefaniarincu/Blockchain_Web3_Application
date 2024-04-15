@@ -1,13 +1,23 @@
 import React, { useRef } from "react";
-import { Card, CardDescription, CardTitle } from "../ui/card";
+import { Card, CardDescription, CardFooter, CardTitle } from "../ui/card";
 import useContract from "@/context/useContract";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { Textarea } from "../ui/textarea";
 
 const AdminView = () => {
-  const { currentAccount, adminAccount, getCandidates } = useContract();
+  const { currentAccount, startVoting, getCandidates } = useContract();
   const [candidates, setCandidates] = React.useState([]);
+
+  const submitStartVoting = async () => {
+    try {
+      await startVoting();
+      alert("Voting started successfully");
+    } catch (error) {
+      console.log(error);
+      alert("Error starting voting");
+    }
+  };
 
   React.useEffect(() => {
     if (!currentAccount) return;
@@ -29,7 +39,9 @@ const AdminView = () => {
       <CardDescription>
         Currently {candidates.length} candidates
       </CardDescription>
-      <Button>Start Voting</Button>
+      <CardFooter>
+        <Button onClick={submitStartVoting}>Start Voting</Button>
+      </CardFooter>
     </Card>
   );
 };
@@ -62,7 +74,9 @@ const UserView = () => {
       <CardTitle>Do you want to candidate?</CardTitle>
       <Input ref={nameRef} placeholder="Your name" />
       <Textarea ref={descriptionRef} placeholder="A description" />
-      <Button onClick={handleSubmit}>Submit Participation</Button>
+      <CardFooter>
+        <Button onClick={handleSubmit}>Submit Participation</Button>
+      </CardFooter>
     </Card>
   );
 };
