@@ -24,6 +24,7 @@ export const ContractProvider = ({ children }: { children: ReactNode }) => {
   const [startVotePriceWei, setStartVotePriceWei] = useState<BigInt>();
   const [endVotePriceWei, setEndVotePriceWei] = useState<BigInt>();
   const [candidates, setCandidates] = useState<string[]>();
+  const [finalWinner, setFinalWinner] = useState<string>();
 
   const prepareContracts = async () => {
     const provider = new ethers.BrowserProvider(window.ethereum);
@@ -96,6 +97,72 @@ export const ContractProvider = ({ children }: { children: ReactNode }) => {
     setCandidates(candidates);
   };
 
+  const fetchFinalWinner = async (rewarderContractLocal: any) => {
+    const sentPrizeTo = await rewarderContractLocal.prizeSentTo();
+    setFinalWinner(sentPrizeTo);
+  };
+
+  const [onlyOnceVotingEvents, setOnlyOnceVotingEvents] = useState(false);
+  const [onlyOnceRewarderEvents, setOnlyOnceRewarderEvents] = useState(false);
+
+  useEffect(() => {
+    if (!votingContract) return;
+    if (onlyOnceVotingEvents) return;
+
+    // const localVotingContract = votingContract;
+
+    votingContract.on("SomeoneCandidated", () => {
+      console.log("[EVENT] Someone candidated");
+      votingContract.getCandidatesList().then((candidates: any) => {
+        setCandidates(candidates);
+      });
+    });
+
+    votingContract.on("SomeoneVoted", () => {
+      console.log("[EVENT] Someone voted");
+      votingContract.getCandidatesList().then((candidates: any) => {
+        setCandidates(candidates);
+      });
+    });
+
+    votingContract.on("StartVote", (startVotingTimestamp: BigInt) => {
+      console.log("[EVENT] Voting started");
+      setStartingTime(new Date(Number(startVotingTimestamp) * 1000));
+    });
+
+    votingContract.on("EndVote", (endVotingTimestamp: BigInt) => {
+      console.log("[EVENT] Voting ended");
+      setEndingTime(new Date(Number(endVotingTimestamp) * 1000));
+    });
+
+    setOnlyOnceVotingEvents(true);
+
+    // return () => {
+    //   localVotingContract.removeListener("SomeoneCandidated", listenerF);
+    // };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [votingContract]);
+
+  useEffect(() => {
+    if (!rewarderContract) return;
+    if (onlyOnceRewarderEvents) return;
+
+    // const localRewarderContract = rewarderContract;
+
+    rewarderContract.on("PrizeAdded", () => {
+      fetchPrizeInformation(rewarderContract);
+    });
+
+    rewarderContract.on("WinnerDeclared", (winnerAddress: string) => {
+      setFinalWinner(winnerAddress);
+    });
+
+    setOnlyOnceRewarderEvents(true);
+
+    // return () => localRewarderContract.removeAllListeners();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rewarderContract]);
+
   const checkIfWalletIsConnected = async () => {
     const { ethereum } = window as any;
 
@@ -119,6 +186,7 @@ export const ContractProvider = ({ children }: { children: ReactNode }) => {
         fetchAdminAccount(rewarderContract);
         fetchStartEndVotePrices(votingContract);
         fetchCandidates(votingContract);
+        fetchFinalWinner(rewarderContract);
       });
     } else {
       console.log("No authorized account found");
@@ -182,13 +250,6 @@ export const ContractProvider = ({ children }: { children: ReactNode }) => {
     return hasVoted;
   };
 
-  const getPrizeSentTo = async () => {
-    if (!rewarderContract) return;
-
-    const sentPrizeTo = await rewarderContract.prizeSentTo();
-    return sentPrizeTo;
-  };
-
   const sendPrizeToWinner = async (winner: any) => {
     const tx = await rewarderContract["sendPrizeToWinner(uint256)"](winner);
     return tx;
@@ -234,7 +295,7 @@ export const ContractProvider = ({ children }: { children: ReactNode }) => {
         updateWinners,
         sendVotes,
         hasVotedFor,
-        getPrizeSentTo,
+        finalWinner,
         sendPrizeToWinner,
         getCandidateData,
       }}

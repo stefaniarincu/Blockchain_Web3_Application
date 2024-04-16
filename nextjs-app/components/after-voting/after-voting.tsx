@@ -130,20 +130,13 @@ const AdminWinnerContent = ({ winners }: any) => {
 };
 
 const AdminView = () => {
-  const { getWinners, getPrizeSentTo } = useContract();
-  const [finalWinner, setFinalWinner] = useState();
+  const { getWinners, finalWinner } = useContract();
   const [winners, setWinners] = React.useState([]);
 
   React.useEffect(() => {
     getWinners()
       .then((winners: any) => {
         setWinners(winners);
-      })
-      .catch((error: any) => {});
-
-    getPrizeSentTo()
-      .then((address: any) => {
-        setFinalWinner(address);
       })
       .catch((error: any) => {});
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -186,17 +179,7 @@ const WinnerDisplay = ({ winner }: any) => {
 };
 
 const UserWinnerContent = () => {
-  const { getPrizeSentTo } = useContract();
-  const [winner, setWinner] = useState();
-
-  useEffect(() => {
-    getPrizeSentTo()
-      .then((address: any) => {
-        setWinner(address);
-      })
-      .catch((error: any) => {});
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [getPrizeSentTo]);
+  const { finalWinner: winner } = useContract();
 
   if (winner === NULL_ADDRESS) return "Winner is not currently available.";
 
