@@ -46,6 +46,19 @@ export const ContractProvider = ({ children }: { children: ReactNode }) => {
     return [votingContractLocal, rewarderContractLocal];
   };
 
+  // https://ethereum.stackexchange.com/questions/42768/how-can-i-detect-change-in-account-in-metamask
+  useEffect(() => {
+    async function listenMMAccount() {
+      window.ethereum.on("accountsChanged", async function () {
+        const accounts = await window.ethereum.request({
+          method: "eth_accounts",
+        });
+        setCurrentAccount(accounts[0]);
+      });
+    }
+    listenMMAccount();
+  }, []);
+
   const fetchTimeInformation = async (votingContractLocal: any) => {
     const startingTime = new Date(
       Number(await votingContractLocal.startVotingTimestamp()) * 1000
