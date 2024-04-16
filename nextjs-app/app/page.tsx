@@ -1,15 +1,13 @@
 "use client";
 
-import YourActions from "@/components/during-voting/your-actions";
 import { EvervaultCard, Icon } from "@/components/ui/evervault-card";
-import VotesTable from "@/components/during-voting/votes-table";
-import VotingChart from "@/components/during-voting/voting-chart";
 import ConditionalProposalOrVoting from "@/components/conditional-render-proposal-vote";
 import Header from "@/components/header";
 import useContract from "@/context/useContract";
 
 export default function Home() {
   const { currentAccount } = useContract();
+  
   return (
     <main className="flex items-center justify-center flex-col size-full gap-10">
       <Header />
@@ -36,11 +34,10 @@ export default function Home() {
         {currentAccount ? (
           <ConditionalProposalOrVoting />
         ) : (
-          <h1 className="text-2xl">Connect your wallet to start voting or candidating</h1>
+          <h1 className="text-2xl">
+            Connect your wallet to start voting or candidating
+          </h1>
         )}
-        {/* <VotesTable /> */}
-        {/* <YourActions /> */}
-        {/* <VotingChart /> */}
       </div>
     </main>
   );

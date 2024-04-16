@@ -28,7 +28,7 @@ const AdminView = () => {
   }, []);
 
   return (
-    <Card className="m-auto max-w-xl space-y-4 rounded-xl bg-white p-8 shadow-md h-full">
+    <Card className="m-auto max-w-xl space-y-4 rounded-xl bg-white p-8 shadow-md">
       <CardTitle>Admin View</CardTitle>
       <CardDescription>
         {winners.length > 0
@@ -68,7 +68,7 @@ const UserView = () => {
   }, []);
 
   return (
-    <Card className="m-auto max-w-xl space-y-4 rounded-xl bg-white p-8 shadow-md h-full">
+    <Card className="m-auto max-w-xl space-y-4 rounded-xl bg-white p-8 shadow-md">
       <CardTitle>Voting has ended!</CardTitle>
       <CardDescription>
         <UserWinnerContent winners={winners} />

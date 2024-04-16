@@ -1,3 +1,4 @@
+import useContract from "@/context/useContract";
 import dynamic from "next/dynamic";
 import {
   CartesianGrid,
@@ -9,18 +10,28 @@ import {
   Cell,
 } from "recharts";
 
+const colors = [
+  "#8884d8",
+  "#82ca9d",
+  "#ffc658",
+  "#ff7300",
+  "#d6ff00",
+  "#00ff00",
+];
+
 const DynamicBarChart = dynamic(
   () => import("recharts").then((mod) => mod.BarChart),
   { ssr: false }
 );
 
 const VotingChart = () => {
-  const data = [
-    { candidate: "Candidate A", votes: 500, color: "#8884d8" },
-    { candidate: "Candidate B", votes: 700, color: "#82ca9d" },
-    { candidate: "Candidate C", votes: 300, color: "#ffc658" },
-    // Add more candidates as needed
-  ];
+  const { candidates } = useContract();
+
+  const data = candidates.map((candidate: any) => ({
+    candidate: candidate[2],
+    votes: Number(candidate[4]),
+    color: colors[Number(candidate[0]) % colors.length],
+  }));
 
   return (
     <DynamicBarChart
@@ -35,7 +46,7 @@ const VotingChart = () => {
       <Tooltip />
       <Legend />
       <Bar dataKey="votes" fill="#8884d8">
-        {data.map((entry, index) => (
+        {data.map((entry: any, index: any) => (
           <Cell key={`cell-${index}`} fill={entry.color} />
         ))}
       </Bar>

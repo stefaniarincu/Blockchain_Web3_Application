@@ -27,6 +27,10 @@ contract Voting {
 
     Candidate[] public candidatesList;
 
+    function hasVotedFor(address _voter, uint256 _candidateId) public view returns (bool) {
+        return voters[_voter].hasVotedFor[_candidateId];
+    }
+
     function getCandidatesList() public view returns (Candidate[] memory) {
         return candidatesList;
     }

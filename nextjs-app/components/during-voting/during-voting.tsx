@@ -2,9 +2,11 @@ import useContract from "@/context/useContract";
 import React from "react";
 import { Button } from "../ui/button";
 import { Card, CardTitle, CardFooter } from "../ui/card";
+import VotingChart from "./voting-chart";
+import { VotingOptionsModal } from "./voting-options-modal";
 
 const AdminView = () => {
-  const { currentAccount, stopVoting } = useContract();
+  const { stopVoting } = useContract();
 
   const submitStopVoting = async () => {
     try {
@@ -17,7 +19,7 @@ const AdminView = () => {
   };
 
   return (
-    <Card className="m-auto max-w-xl space-y-4 rounded-xl bg-white p-8 shadow-md h-full">
+    <Card className="m-auto max-w-xl space-y-4 rounded-xl bg-white p-8 shadow-md">
       <CardTitle>Admin View</CardTitle>
       <CardFooter>
         <Button onClick={submitStopVoting}>Stop Voting</Button>
@@ -27,15 +29,26 @@ const AdminView = () => {
 };
 
 const UserView = () => {
-  return <div>User View</div>;
+  return (
+    <Card className="m-auto max-w-xl space-y-4 rounded-xl bg-white p-8 shadow-md">
+      <CardTitle>Vote your favorite</CardTitle>
+      <CardFooter>
+        <VotingOptionsModal />
+      </CardFooter>
+    </Card>
+  );
 };
 
 const DuringVoting = () => {
   const { currentAccount, adminAccount } = useContract();
   const isAdmin = currentAccount === adminAccount;
 
-  if (isAdmin) return <AdminView />;
-  else return <UserView />;
+  return (
+    <>
+      {isAdmin ? <AdminView /> : <UserView />}
+      <VotingChart />
+    </>
+  );
 };
 
 export default DuringVoting;

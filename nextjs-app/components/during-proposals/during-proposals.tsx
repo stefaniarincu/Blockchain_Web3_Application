@@ -6,8 +6,7 @@ import { Input } from "../ui/input";
 import { Textarea } from "../ui/textarea";
 
 const AdminView = () => {
-  const { currentAccount, startVoting, getCandidates } = useContract();
-  const [candidates, setCandidates] = React.useState([]);
+  const { startVoting, candidates } = useContract();
 
   const submitStartVoting = async () => {
     try {
@@ -18,20 +17,6 @@ const AdminView = () => {
       alert("Error starting voting");
     }
   };
-
-  React.useEffect(() => {
-    if (!currentAccount) return;
-
-    getCandidates()
-      .then((candidates: any) => {
-        console.log(candidates);
-        setCandidates(candidates);
-      })
-      .catch((error: any) => {
-        console.error(error);
-      });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentAccount]);
 
   return (
     <Card className="m-auto max-w-xl space-y-4 rounded-xl bg-white p-8 shadow-md h-full">

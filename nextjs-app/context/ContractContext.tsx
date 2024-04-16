@@ -22,6 +22,7 @@ export const ContractProvider = ({ children }: { children: ReactNode }) => {
   const [weiPrize, setWeiPrize] = useState<number>(0);
   const [startVotePriceWei, setStartVotePriceWei] = useState<BigInt>();
   const [endVotePriceWei, setEndVotePriceWei] = useState<BigInt>();
+  const [candidates, setCandidates] = useState<string[]>();
 
   const prepareContracts = async () => {
     const provider = new ethers.BrowserProvider(window.ethereum);
@@ -75,6 +76,11 @@ export const ContractProvider = ({ children }: { children: ReactNode }) => {
     setEndVotePriceWei(endVotePrice);
   };
 
+  const fetchCandidates = async (votingContractLocal: any) => {
+    const candidates = await votingContractLocal.getCandidatesList();
+    setCandidates(candidates);
+  };
+
   const checkIfWalletIsConnected = async () => {
     const { ethereum } = window as any;
 
@@ -97,6 +103,7 @@ export const ContractProvider = ({ children }: { children: ReactNode }) => {
         fetchPrizeInformation(rewarderContract);
         fetchAdminAccount(rewarderContract);
         fetchStartEndVotePrices(votingContract);
+        fetchCandidates(votingContract);
       });
     } else {
       console.log("No authorized account found");
@@ -125,11 +132,6 @@ export const ContractProvider = ({ children }: { children: ReactNode }) => {
     return state;
   };
 
-  const getCandidates = async () => {
-    const candidates = await votingContract.getCandidatesList();
-    return candidates;
-  };
-
   const submitCandidate = async (name: string, description: string) => {
     const tx = await votingContract.candidate(name, description);
     return tx;
@@ -155,13 +157,23 @@ export const ContractProvider = ({ children }: { children: ReactNode }) => {
     return tx;
   };
 
+  const sendVotes = async (votes: number[]) => {
+    const tx = await votingContract.vote(votes);
+    return tx;
+  };
+
+  const hasVotedFor = async (voter: any, candidateId: any) => {
+    const hasVoted = await votingContract.hasVotedFor(voter, candidateId);
+    return hasVoted;
+  };
+
   return (
     <ContractContext.Provider
       value={{
         currentAccount,
         adminAccount,
         connectWallet,
-        getCandidates,
+        candidates,
         getVotingCurrentState,
         startingTime,
         endingTime,
@@ -171,6 +183,8 @@ export const ContractProvider = ({ children }: { children: ReactNode }) => {
         stopVoting,
         getWinners,
         updateWinners,
+        sendVotes,
+        hasVotedFor,
       }}
     >
       {children}
