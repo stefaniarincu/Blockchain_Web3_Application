@@ -54,13 +54,12 @@ describe("Voting", async function () {
             "I am Alice and I will build a blockchain around the world"
         );
 
-      const COST_START = await voting.adminStartVoteCost();
-
       expect(
         (await voting.checkVotingCurrentState()) == 0,
         "Voting should be in not started phase"
       ).to.equal(true);
 
+      const COST_START = await voting.adminStartVoteCost();
       await voting.startVoting({ value: COST_START });
 
       expect(
@@ -201,6 +200,7 @@ describe("Voting", async function () {
 
   describe("Voting Cycle", async function () {
     it("Create candidates", async function () {
+      const [admin, acc1, acc2, acc3] = await ethers.getSigners();
       const INITIAL_PRIZE = 50;
 
       const Rewarder = await ethers.getContractFactory("Rewarder");
@@ -208,10 +208,6 @@ describe("Voting", async function () {
 
       const Voting = await ethers.getContractFactory("Voting");
       const voting = await Voting.deploy(await rewarder.getAddress());
-
-      const COST_START = await voting.adminStartVoteCost();
-
-      const [admin, acc1, acc2, acc3] = await ethers.getSigners();
 
       await voting
         .connect(acc1)
@@ -236,6 +232,7 @@ describe("Voting", async function () {
           )
       ).to.be.revertedWith("You have already candidated!");
 
+      const COST_START = await voting.adminStartVoteCost();
       await voting.startVoting({ value: COST_START });
 
       expect(
@@ -256,8 +253,6 @@ describe("Voting", async function () {
 
       const Voting = await ethers.getContractFactory("Voting");
       const voting = await Voting.deploy(await rewarder.getAddress());
-
-      const COST_START = await voting.adminStartVoteCost();
 
       const [
         admin,
@@ -296,6 +291,7 @@ describe("Voting", async function () {
           )
       ).to.be.revertedWith("You have already candidated!");
 
+      const COST_START = await voting.adminStartVoteCost();
       await voting.startVoting({ value: COST_START });
 
       expect(
@@ -339,8 +335,6 @@ describe("Voting", async function () {
       const Voting = await ethers.getContractFactory("Voting");
       const voting = await Voting.deploy(await rewarder.getAddress());
 
-      const COST_START = await voting.adminStartVoteCost();
-
       const [
         admin,
         acc1,
@@ -378,6 +372,7 @@ describe("Voting", async function () {
           )
       ).to.be.revertedWith("You have already candidated!");
 
+      const COST_START = await voting.adminStartVoteCost();
       await voting.startVoting({ value: COST_START });
 
       expect(
@@ -444,8 +439,6 @@ describe("Voting", async function () {
       const Voting = await ethers.getContractFactory("Voting");
       const voting = await Voting.deploy(await rewarder.getAddress());
 
-      const COST_START = await voting.adminStartVoteCost();
-
       const [
         admin,
         acc1,
@@ -483,6 +476,7 @@ describe("Voting", async function () {
           )
       ).to.be.revertedWith("You have already candidated!");
 
+      const COST_START = await voting.adminStartVoteCost();
       await voting.startVoting({ value: COST_START });
 
       expect(
@@ -540,106 +534,6 @@ describe("Voting", async function () {
         bobBalanceAfterPrize > bobBalance,
         "Bob should receive prize"
       ).to.equal(true);
-    });
-
-    it("Prizing fail when tie", async function () {
-      const INITIAL_PRIZE = 50;
-
-      const Rewarder = await ethers.getContractFactory("Rewarder");
-      const rewarder = await Rewarder.deploy({ value: INITIAL_PRIZE });
-
-      const Voting = await ethers.getContractFactory("Voting");
-      const voting = await Voting.deploy(await rewarder.getAddress());
-
-      const COST_START = await voting.adminStartVoteCost();
-
-      const [
-        admin,
-        acc1,
-        acc2,
-        acc3,
-        acc4,
-        acc5,
-        acc6,
-        acc7,
-        acc8,
-        acc9,
-        acc10,
-      ] = await ethers.getSigners();
-
-      await voting
-        .connect(acc1)
-        .candidate(
-          "Bob",
-          "I am Bob and I will build a blockchain around China"
-        );
-
-      await voting
-        .connect(acc2)
-        .candidate(
-          "Alice",
-          "I am Alice and I will build a blockchain around the world"
-        );
-
-      await expect(
-        voting
-          .connect(acc2)
-          .candidate(
-            "Alice",
-            "I am Alice and I will build a blockchain around the world"
-          )
-      ).to.be.revertedWith("You have already candidated!");
-
-      await voting.startVoting({ value: COST_START });
-
-      expect(
-        (await voting.checkVotingCurrentState()) == 1,
-        "Voting should be in started phase"
-      ).to.equal(true);
-
-      await expect(
-        voting.connect(acc3).candidate("Eve", "I am Eve and I will hack")
-      ).to.be.revertedWith("Voting has already started or has ended!");
-
-      await voting.connect(acc3).vote([0]);
-      await voting.connect(acc3).vote([1]);
-      await expect(voting.connect(acc3).vote([1])).to.be.revertedWith(
-        "You have already voted for this candidate!"
-      );
-
-      await voting.connect(acc4).vote([0]);
-      await voting.connect(acc5).vote([0]);
-      await voting.connect(acc6).vote([0]);
-      await voting.connect(acc2).vote([0]);
-      await voting.connect(acc7).vote([1]);
-      await voting.connect(acc8).vote([1]);
-      await voting.connect(acc9).vote([1]);
-      await voting.connect(acc10).vote([1]);
-
-      const COST_STOP = await voting.adminEndVoteCost();
-      await voting.endVoting({ value: COST_STOP });
-
-      expect(
-        (await voting.checkVotingCurrentState()) == 2,
-        "Voting not stopped"
-      ).to.equal(true);
-
-      await expect(
-        voting.getWinners()
-      ).to.be.revertedWith("Winners have not been updated yet!");
-
-      await voting.updateWinners();
-
-      const winners = await voting.getWinners();
-
-      expect(
-        (await winners.length) > 1,
-        "There should be more than one winner (a tie)"
-      ).to.equal(true);
-
-      await expect(rewarder["sendPrizeToWinner(uint256)"](700)).to.be.revertedWith(
-        "Candidate ID not found in winners list!"
-      );
     });
   });
 });

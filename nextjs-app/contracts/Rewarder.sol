@@ -28,6 +28,11 @@ contract Rewarder {
         _;
     }
 
+    modifier onlyIfLinked {
+        require(address(votingContract) != address(0), "No voting contract linked!");
+        _;
+    }
+
     // Can only be called by a voting contract, which to be created needs
     // to be linked to this rewarder contract
     function linkVotingContract(address payable _votingContract) external {
@@ -51,8 +56,7 @@ contract Rewarder {
         return false;
     }
 
-    function sendPrizeToWinner(uint256 _winnerCandidateId) public onlyVotingAdmin {
-        require(address(votingContract) != address(0), "No voting contract linked!");
+    function sendPrizeToWinner(uint256 _winnerCandidateId) public onlyVotingAdmin onlyIfLinked {
         require(prizeSentTo == address(0), "Prize has already been sent to a winner!");
 
         uint256[] memory winners = votingContract.getWinners();
@@ -72,7 +76,9 @@ contract Rewarder {
         emit WinnerDeclared(_winner, totalPrize);
     }
 
-    function sendPrizeToWinner() public onlyVotingAdmin {
+    function sendPrizeToWinner() public onlyVotingAdmin onlyIfLinked {
+        require (votingContract.getWinners().length == 1, "There are multiple winners! Please specify the winner ID.");
+        
         return sendPrizeToWinner(999);
     }
 

@@ -108,7 +108,7 @@ contract Voting {
         rewarder.addFundsForWinner{value: msg.value}();
     }
 
-    function startVoting() public onlyIfVotingNotStarted onlyIfAtLeastTwoCandidates onlyAdmin payable {
+    function startVoting() public onlyIfVotingNotStarted onlyAdmin onlyIfAtLeastTwoCandidates payable {
         if (block.timestamp != startVotingTimestamp) {
             require(msg.value >= adminStartVoteCost, string(abi.encodePacked("Insufficient payment to start voting early! You need at least ", (adminStartVoteCost / 1 ether).toString(), ".", (adminStartVoteCost % 1 ether).toString(), " ethers.")));            
             addFundsToRewarder();
