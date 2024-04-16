@@ -145,6 +145,16 @@ export const ContractProvider = ({ children }: { children: ReactNode }) => {
     return tx;
   };
 
+  const getWinners = async () => {
+    const winners = await votingContract.getWinners();
+    return winners;
+  };
+
+  const updateWinners = async () => {
+    const tx = await votingContract.updateWinners();
+    return tx;
+  };
+
   return (
     <ContractContext.Provider
       value={{
@@ -159,6 +169,8 @@ export const ContractProvider = ({ children }: { children: ReactNode }) => {
         submitCandidate,
         startVoting,
         stopVoting,
+        getWinners,
+        updateWinners,
       }}
     >
       {children}

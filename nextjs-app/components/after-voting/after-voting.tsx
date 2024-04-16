@@ -4,42 +4,75 @@ import { Button } from "../ui/button";
 import { Card, CardTitle, CardDescription, CardFooter } from "../ui/card";
 
 const AdminView = () => {
-  const { currentAccount, startVoting, getCandidates } = useContract();
-  const [candidates, setCandidates] = React.useState([]);
+  const { getWinners, updateWinners } = useContract();
+  const [winners, setWinners] = React.useState([]);
 
-  const submitStartVoting = async () => {
+  const submitUpdateWinners = async () => {
     try {
-      await startVoting();
-      alert("Voting started successfully");
+      await updateWinners();
+      alert("Winners updated successfully");
     } catch (error) {
       console.log(error);
-      alert("Error starting voting");
+      alert("Error updating winners");
     }
   };
 
   React.useEffect(() => {
-    if (!currentAccount) return;
-
-    getCandidates()
-      .then((candidates: any) => {
-        console.log(candidates);
-        setCandidates(candidates);
+    getWinners()
+      .then((winners: any) => {
+        console.log(winners);
+        setWinners(winners);
       })
-      .catch((error: any) => {
-        console.error(error);
-      });
+      .catch((error: any) => {});
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentAccount]);
+  }, []);
 
   return (
     <Card className="m-auto max-w-xl space-y-4 rounded-xl bg-white p-8 shadow-md h-full">
       <CardTitle>Admin View</CardTitle>
       <CardDescription>
-        Currently {candidates.length} candidates
+        {winners.length > 0
+          ? `Winner ${winners[0]}`
+          : "Winners are not currently available."}
       </CardDescription>
       <CardFooter>
-        <Button onClick={submitStartVoting}>Start Voting</Button>
+        {winners.length == 0 && (
+          <Button onClick={submitUpdateWinners}>Update Winners</Button>
+        )}
       </CardFooter>
+    </Card>
+  );
+};
+
+const UserWinnerContent = ({ winners }: any) => {
+  if (winners.length === 0) return "Winner is not currently available.";
+
+  if (winners.length > 1)
+    return "There was a tie! Waiting for admin to make the final verdict.";
+
+  return `Winner: ${winners[0]}`;
+};
+
+const UserView = () => {
+  const { getWinners } = useContract();
+  const [winners, setWinners] = React.useState([]);
+
+  React.useEffect(() => {
+    getWinners()
+      .then((winners: any) => {
+        console.log(winners);
+        setWinners(winners);
+      })
+      .catch((error: any) => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  return (
+    <Card className="m-auto max-w-xl space-y-4 rounded-xl bg-white p-8 shadow-md h-full">
+      <CardTitle>Voting has ended!</CardTitle>
+      <CardDescription>
+        <UserWinnerContent winners={winners} />
+      </CardDescription>
     </Card>
   );
 };

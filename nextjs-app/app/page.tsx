@@ -6,8 +6,10 @@ import VotesTable from "@/components/during-voting/votes-table";
 import VotingChart from "@/components/during-voting/voting-chart";
 import ConditionalProposalOrVoting from "@/components/conditional-render-proposal-vote";
 import Header from "@/components/header";
+import useContract from "@/context/useContract";
 
 export default function Home() {
+  const { currentAccount } = useContract();
   return (
     <main className="flex items-center justify-center flex-col size-full gap-10">
       <Header />
@@ -31,7 +33,11 @@ export default function Home() {
         />
       </div>
       <div className="flex items-center gap-10">
-        <ConditionalProposalOrVoting />
+        {currentAccount ? (
+          <ConditionalProposalOrVoting />
+        ) : (
+          <h1 className="text-2xl">Connect your wallet to start voting or candidating</h1>
+        )}
         {/* <VotesTable /> */}
         {/* <YourActions /> */}
         {/* <VotingChart /> */}
