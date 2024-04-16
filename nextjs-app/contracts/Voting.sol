@@ -32,7 +32,6 @@ contract Voting {
     }
 
     uint256[] private winnersCandidateIdList = new uint256[](0);
-    uint256 minBalance;
 
     uint256 public startVotingTimestamp;
     uint256 public stopVotingTimestamp;
@@ -49,12 +48,12 @@ contract Voting {
     event EndVote(uint256 endVotingTimestamp);
 
     modifier onlyIfVotingNotStarted {
-        require(checkVotingCurrentState() == VotingState.NotStarted, "Voting has already started!");
+        require(checkVotingCurrentState() == VotingState.NotStarted, "Voting has already started or has ended!");
         _;
     }
 
     modifier onlyIfVotingStarted {
-        require(checkVotingCurrentState() == VotingState.Started, "Voting has not started!");
+        require(checkVotingCurrentState() == VotingState.Started, "Voting has not started or has already ended!");
         _;
     }
 
@@ -70,6 +69,11 @@ contract Voting {
 
     modifier onlyRegularUser {
         require(msg.sender != rewarder.votingAdmin(), "Only regular users can perform this action!");
+        _;
+    }
+
+    modifier onlyIfAtLeastTwoCandidates {
+        require(candidatesList.length > 1, "Cannot start voting with less than two candidates!");
         _;
     }
 
@@ -94,7 +98,6 @@ contract Voting {
             return VotingState.Ended;
         }
     }
-    
 
     // internal function to add funds to the Rewarder
     function addFundsToRewarder() internal onlyAdmin {
@@ -105,7 +108,7 @@ contract Voting {
         rewarder.addFundsForWinner{value: msg.value}();
     }
 
-    function startVoting() public onlyIfVotingNotStarted onlyAdmin payable {
+    function startVoting() public onlyIfVotingNotStarted onlyIfAtLeastTwoCandidates onlyAdmin payable {
         if (block.timestamp != startVotingTimestamp) {
             require(msg.value >= adminStartVoteCost, string(abi.encodePacked("Insufficient payment to start voting early! You need at least ", (adminStartVoteCost / 1 ether).toString(), ".", (adminStartVoteCost % 1 ether).toString(), " ethers.")));            
             addFundsToRewarder();
@@ -151,6 +154,7 @@ contract Voting {
 
             candidatesList[_candidateId].numVotes++;
             voters[msg.sender].hasVotedFor[_candidateId] = true;
+            voters[msg.sender].numPersonsVoted += 1;
         }
 
         emit SomeoneVoted(msg.sender, _candidateIds[0]);
