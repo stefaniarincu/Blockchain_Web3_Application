@@ -1,19 +1,19 @@
 const hre = require("hardhat");
 
 async function deploy() {
-  const votingFactory = await hre.ethers.getContractFactory("Voting");
-  const votingContract = await votingFactory.deploy();
+  const INITIAL_PRIZE = ethers.parseEther("50");
 
-  await votingContract.waitForDeployment();
+  const Rewarder = await ethers.getContractFactory("Rewarder");
+  const rewarder = await Rewarder.deploy({ value: INITIAL_PRIZE });
 
-  console.log("Voting contract deployed to:", await votingContract.getAddress());
+  const Voting = await ethers.getContractFactory("Voting");
+  const voting = await Voting.deploy(await rewarder.getAddress());
 
-  const rewarderFactory = await hre.ethers.getContractFactory("Rewarder");
-  const rewarderContract = await rewarderFactory.deploy();
-
-  await rewarderContract.waitForDeployment();
-
-  console.log("Rewarder contract deployed to:", await rewarderContract.getAddress());
+  console.log(
+    "Rewarder contract deployed to:",
+    await rewarder.getAddress()
+  );
+  console.log("Voting contract deployed to:", await voting.getAddress());
 }
 
 deploy()

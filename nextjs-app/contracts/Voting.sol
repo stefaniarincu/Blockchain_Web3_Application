@@ -26,6 +26,11 @@ contract Voting {
     mapping(address => Voter) public voters;
 
     Candidate[] public candidatesList;
+
+    function getCandidatesList() public view returns (Candidate[] memory) {
+        return candidatesList;
+    }
+
     uint256[] private winnersCandidateIdList = new uint256[](0);
 
     uint256 public startVotingTimestamp;
@@ -155,38 +160,7 @@ contract Voting {
         emit SomeoneVoted(msg.sender, _candidateIds[0]);
     }
 
-    function getWinners() public onlyIfVotingEnded returns (uint256[] memory) {
-        if (winnersCandidateIdList.length == 0){
-            uint256 maxVotes = 0;
-            uint256 countWinners = 0;
-
-            for (uint256 i = 0; i < candidatesList.length; i++) {
-                if (candidatesList[i].numVotes > maxVotes) {
-                    maxVotes = candidatesList[i].numVotes;
-                    countWinners = 1; 
-                } else if (candidatesList[i].numVotes == maxVotes) {
-                    countWinners++;
-                }
-            }
-
-            winnersCandidateIdList = new uint256[](countWinners);
-            uint256 currentIndex = 0;
-
-            for (uint256 i = 0; i < candidatesList.length; i++) {
-                if (candidatesList[i].numVotes == maxVotes) {
-                    winnersCandidateIdList[currentIndex] = i;
-                    currentIndex++;
-                }
-            }
-        }
-
-        return winnersCandidateIdList;  
-    }
-
-    // for testing purposes only
-    function debuggingGetWinners() view public onlyIfVotingEnded returns (uint256[] memory) {
-        uint256[] memory _winnersCandidateIdList;
-
+    function updateWinners() public onlyIfVotingEnded onlyAdmin {
         uint256 maxVotes = 0;
         uint256 countWinners = 0;
 
@@ -199,17 +173,21 @@ contract Voting {
             }
         }
 
-        _winnersCandidateIdList = new uint256[](countWinners);
+        winnersCandidateIdList = new uint256[](countWinners);
         uint256 currentIndex = 0;
 
         for (uint256 i = 0; i < candidatesList.length; i++) {
             if (candidatesList[i].numVotes == maxVotes) {
-                _winnersCandidateIdList[currentIndex] = i;
+                winnersCandidateIdList[currentIndex] = i;
                 currentIndex++;
             }
         }
+    }
 
-        return _winnersCandidateIdList;  
+    function getWinners() public view onlyIfVotingEnded returns (uint256[] memory) {
+        require(winnersCandidateIdList.length > 0, "Winners have not been updated yet!");
+
+        return winnersCandidateIdList;  
     }
 
     function getWinnerAddress(uint256 _winnerId) public onlyIfVotingEnded view returns (address) {
