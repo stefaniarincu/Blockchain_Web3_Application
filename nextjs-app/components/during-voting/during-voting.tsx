@@ -4,17 +4,26 @@ import { Button } from "../ui/button";
 import { Card, CardTitle, CardFooter } from "../ui/card";
 import VotingChart from "./voting-chart";
 import { VotingOptionsModal } from "./voting-options-modal";
+import { toast } from "sonner";
+import { errorDecoder } from "@/context/constants";
 
 const AdminView = () => {
   const { stopVoting } = useContract();
 
   const submitStopVoting = async () => {
     try {
-      await stopVoting();
-      alert("Voting stopped successfully");
-    } catch (error) {
+      const tx = await stopVoting();
+      toast.promise(tx.wait(), {
+        loading: "Loading...",
+        success: () => {
+          return `Transaction completed! ${tx.hash}`;
+        },
+        error: "There was an error with your transaction.",
+      });
+    } catch (error: any) {
       console.log(error);
-      alert("Error stopped voting");
+      const { reason } = await errorDecoder.decode(error);
+      toast.error(`Error stopping voting: "${reason}"`, { duration: 5000 });
     }
   };
 

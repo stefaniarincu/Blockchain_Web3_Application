@@ -9,6 +9,7 @@ import {
   RewarderABI,
   RewarderAddress,
 } from "./constants";
+import { toast } from "sonner";
 
 export const ContractContext = createContext<any>(undefined);
 
@@ -54,6 +55,7 @@ export const ContractProvider = ({ children }: { children: ReactNode }) => {
           method: "eth_accounts",
         });
         setCurrentAccount(accounts[0]);
+        prepareContracts();
       });
     }
     listenMMAccount();
@@ -129,7 +131,7 @@ export const ContractProvider = ({ children }: { children: ReactNode }) => {
 
   const connectWallet = async () => {
     if (!window.ethereum) {
-      alert("Get MetaMask!");
+      toast.error("Get MetaMask!", { duration: 5000 });
       return;
     }
 

@@ -15,6 +15,8 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import useContract from "@/context/useContract";
 import { VotingOptionsTable } from "./voting-options-table";
 import { useState } from "react";
+import { toast } from "sonner";
+import { errorDecoder } from "@/context/constants";
 
 export function AlertPermanent() {
   return (
@@ -45,11 +47,18 @@ export function VotingOptionsModal() {
 
   const handleSubmit = async () => {
     try {
-      await sendVotes(toVoteIds);
-      alert("Votes submitted successfully");
-    } catch (error) {
+      const tx = await sendVotes(toVoteIds);
+      toast.promise(tx.wait(), {
+        loading: "Loading...",
+        success: () => {
+          return `Transaction completed! ${tx.hash}`;
+        },
+        error: "There was an error with your transaction.",
+      });
+    } catch (error: any) {
       console.log(error);
-      alert("Error submitting votes");
+      const { reason } = await errorDecoder.decode(error);
+      toast.error(`Error submitting votes: "${reason}"`, { duration: 5000 });
     }
   };
 

@@ -2,8 +2,9 @@ import useContract from "@/context/useContract";
 import React, { useEffect, useState } from "react";
 import { Button } from "../ui/button";
 import { Card, CardTitle, CardDescription } from "../ui/card";
-import { NULL_ADDRESS } from "@/context/constants";
+import { errorDecoder, NULL_ADDRESS } from "@/context/constants";
 import { ethers } from "ethers";
+import { toast } from "sonner";
 
 const SelectWinner = ({ winners, setWinner }: any) => {
   const { candidates } = useContract();
@@ -57,23 +58,38 @@ const AdminWinnerContent = ({ winners }: any) => {
 
   const submitUpdateWinners = async () => {
     try {
-      await updateWinners();
-      alert("Winners updated successfully");
-    } catch (error) {
+      const tx = await updateWinners();
+      toast.promise(tx.wait(), {
+        loading: "Loading...",
+        success: () => {
+          return `Transaction completed! ${tx.hash}`;
+        },
+        error: "There was an error with your transaction.",
+      });
+    } catch (error: any) {
       console.log(error);
-      alert("Error updating winners");
+      const { reason } = await errorDecoder.decode(error);
+      toast.error(`Error updating winners: "${reason}"`, { duration: 5000 });
     }
   };
 
   const submitSendPrize = async (winnerId: number) => {
-    if (winnerId === -1) return alert("Please select a winner");
+    if (winnerId === -1)
+      return toast.error("Please select a winner", { duration: 5000 });
 
     try {
-      await sendPrizeToWinner(winnerId);
-      alert("Prize sent successfully");
-    } catch (error) {
+      const tx = await sendPrizeToWinner(winnerId);
+      toast.promise(tx.wait(), {
+        loading: "Loading...",
+        success: () => {
+          return `Transaction completed! ${tx.hash}`;
+        },
+        error: "There was an error with your transaction.",
+      });
+    } catch (error: any) {
       console.log(error);
-      alert("Error sending prize");
+      const { reason } = await errorDecoder.decode(error);
+      toast.error(`Error sending prize: "${reason}"`, { duration: 5000 });
     }
   };
 

@@ -4,22 +4,31 @@ import useContract from "@/context/useContract";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { Textarea } from "../ui/textarea";
+import { toast } from "sonner";
+import { errorDecoder } from "@/context/constants";
 
 const AdminView = () => {
   const { startVoting, candidates } = useContract();
 
   const submitStartVoting = async () => {
     try {
-      await startVoting();
-      alert("Voting started successfully");
-    } catch (error) {
+      const tx = await startVoting();
+      toast.promise(tx.wait(), {
+        loading: "Loading...",
+        success: () => {
+          return `Transaction completed! ${tx.hash}`;
+        },
+        error: "There was an error with your transaction.",
+      });
+    } catch (error: any) {
       console.log(error);
-      alert("Error starting voting");
+      const { reason } = await errorDecoder.decode(error);
+      toast.error(`Error starting voting: "${reason}"`, { duration: 5000 });
     }
   };
 
   return (
-    <Card className="m-auto max-w-xl space-y-4 rounded-xl bg-white p-8 shadow-md h-full">
+    <Card className="m-auto max-w-xl space-y-4 rounded-xl bg-white p-8 shadow-md">
       <CardTitle>Admin View</CardTitle>
       <CardDescription>
         Currently {candidates.length} candidates
@@ -43,19 +52,26 @@ const UserView = () => {
     const description = descriptionRef.current.value;
 
     if (name === "" || description === "")
-      return alert("Please fill all fields");
+      return toast.error("Please fill all fields", { duration: 5000 });
 
     try {
-      await submitCandidate(name, description);
-      alert("Candidate submitted successfully");
-    } catch (error) {
+      const tx = await submitCandidate(name, description);
+      toast.promise(tx.wait(), {
+        loading: "Loading...",
+        success: () => {
+          return `Transaction completed! ${tx.hash}`;
+        },
+        error: "There was an error with your transaction.",
+      });
+    } catch (error: any) {
       console.log(error);
-      alert("Error submitting candidate");
+      const { reason } = await errorDecoder.decode(error);
+      toast.error(`Error submitting candidate: "${reason}"`, { duration: 5000 });
     }
   };
 
   return (
-    <Card className="m-auto max-w-xl space-y-4 rounded-xl bg-white p-8 shadow-md h-full">
+    <Card className="m-auto max-w-xl space-y-4 rounded-xl bg-white p-8 shadow-md">
       <CardTitle>Do you want to candidate?</CardTitle>
       <Input ref={nameRef} placeholder="Your name" />
       <Textarea ref={descriptionRef} placeholder="A description" />
