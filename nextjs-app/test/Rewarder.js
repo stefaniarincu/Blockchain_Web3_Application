@@ -72,5 +72,99 @@ describe("Rewarder", async function () {
         rewarder.sendPrizeToWinner()
       ).to.be.revertedWith("No voting contract linked!");
     });
+
+    it("Should fail if the prize is sent twice", async function () {
+      const [admin, acc1, acc2, acc3, acc4] = await ethers.getSigners();
+      const INITIAL_PRIZE = 50;
+
+      const Rewarder = await ethers.getContractFactory("Rewarder");
+      const rewarder = await Rewarder.deploy({ value: INITIAL_PRIZE });
+
+      await expect(
+        rewarder.sendPrizeToWinner()
+      ).to.be.revertedWith("No voting contract linked!");
+
+      const Voting = await ethers.getContractFactory("Voting");
+      const voting = await Voting.deploy(await rewarder.getAddress());
+
+      await voting
+        .connect(acc1)
+        .candidate(
+          "Bob",
+          "I am Bob and I will build a blockchain around China"
+        );
+
+      await voting
+        .connect(acc2)
+        .candidate(
+          "Alice",
+          "I am Alice and I will build a blockchain around the world"
+        );
+
+      await expect(
+        voting
+          .connect(acc2)
+          .candidate(
+            "Alice",
+            "I am Alice and I will build a blockchain around the world"
+          )
+      ).to.be.revertedWith("You have already candidated!");
+
+      const COST_START = await voting.adminStartVoteCost();
+      await voting.startVoting({ value: COST_START });
+
+      expect(
+        (await voting.checkVotingCurrentState()) == 1,
+        "Voting should be in started phase"
+      ).to.equal(true);
+
+      await expect(
+        voting.connect(acc3).candidate("Eve", "I am Eve and I will hack")
+      ).to.be.revertedWith("Voting has already started or has ended!");
+
+      await voting.connect(acc3).vote([0]);
+      await voting.connect(acc3).vote([1]);
+      await expect(voting.connect(acc3).vote([1])).to.be.revertedWith(
+        "You have already voted for this candidate!"
+      );
+
+      await voting.connect(acc4).vote([0]);
+      await voting.connect(acc2).vote([0]);
+    
+      const COST_STOP = await voting.adminEndVoteCost();
+      await voting.endVoting({ value: COST_STOP });
+
+      expect(
+        (await voting.checkVotingCurrentState()) == 2,
+        "Voting not stopped"
+      ).to.equal(true);
+
+      await expect(
+        voting.getWinners()
+      ).to.be.revertedWith("Winners have not been updated yet!");
+
+      await voting.updateWinners();
+
+      const winners = await voting.getWinners();
+
+      expect(winners.length == 1, "There should be one winner").to.equal(true);
+
+      expect(winners[0] == 0, "Winner should be Bob").to.equal(true);
+
+      const bobBalance = await ethers.provider.getBalance(acc1.address);
+      await rewarder.sendPrizeToWinner();
+      const bobBalanceAfterPrize = await ethers.provider.getBalance(
+        acc1.address
+      );
+
+      expect(
+        bobBalanceAfterPrize > bobBalance,
+        "Bob should receive prize"
+      ).to.equal(true);
+
+      await expect(rewarder.sendPrizeToWinner()).to.be.revertedWith(
+        "Prize has already been sent to a winner!"
+      );
+    });
   });
 });

@@ -7,6 +7,7 @@ contract Rewarder {
     address public votingAdmin;
     Voting public votingContract;
     uint256 public totalPrize;
+    address public prizeSentTo;
 
     event PrizeAdded(uint256 amount);
     event WinnerDeclared(address winner, uint256 prizeAmount);
@@ -52,6 +53,7 @@ contract Rewarder {
 
     function sendPrizeToWinner(uint256 _winnerCandidateId) public onlyVotingAdmin {
         require(address(votingContract) != address(0), "No voting contract linked!");
+        require(prizeSentTo == address(0), "Prize has already been sent to a winner!");
 
         uint256[] memory winners = votingContract.getWinners();
         address _winner;
@@ -64,6 +66,9 @@ contract Rewarder {
         }
 
         payable(_winner).transfer(totalPrize);
+        
+        prizeSentTo = _winner;
+        
         emit WinnerDeclared(_winner, totalPrize);
     }
 
