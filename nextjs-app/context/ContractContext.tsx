@@ -277,6 +277,18 @@ export const ContractProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  const getAddressFromCandidateId = (id: any) => {
+    if (!candidates) return null;
+
+    const candidate = candidates.find((candidate: any) => candidate[0] === id);
+
+    if (candidate) {
+      return candidate[1];
+    } else {
+      return null;
+    }
+  };
+
   return (
     <ContractContext.Provider
       value={{
@@ -298,6 +310,7 @@ export const ContractProvider = ({ children }: { children: ReactNode }) => {
         finalWinner,
         sendPrizeToWinner,
         getCandidateData,
+        getAddressFromCandidateId,
       }}
     >
       {children}

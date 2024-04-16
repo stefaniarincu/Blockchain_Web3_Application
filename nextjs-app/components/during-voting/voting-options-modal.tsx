@@ -17,6 +17,7 @@ import { VotingOptionsTable } from "./voting-options-table";
 import { useState } from "react";
 import { toast } from "sonner";
 import { errorDecoder } from "@/context/constants";
+import { DialogClose } from "@radix-ui/react-dialog";
 
 export function AlertPermanent() {
   return (
@@ -51,6 +52,7 @@ export function VotingOptionsModal() {
       toast.promise(tx.wait(), {
         loading: "Loading...",
         success: () => {
+          setToVoteIds([]);
           return `Transaction completed! ${tx.hash}`;
         },
         error: "There was an error with your transaction.",
@@ -80,9 +82,11 @@ export function VotingOptionsModal() {
           setToVoteIds={setToVoteIds}
         />
         <DialogFooter>
-          <Button type="submit" variant="destructive" onClick={handleSubmit}>
-            Submit vote
-          </Button>
+          <DialogClose asChild>
+            <Button type="submit" variant="destructive" onClick={handleSubmit}>
+              Submit vote
+            </Button>
+          </DialogClose>
         </DialogFooter>
       </DialogContent>
     </Dialog>

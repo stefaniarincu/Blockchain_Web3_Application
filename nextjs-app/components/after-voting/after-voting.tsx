@@ -52,7 +52,7 @@ const SelectWinner = ({ winners, setWinner }: any) => {
 };
 
 const AdminWinnerContent = ({ winners }: any) => {
-  const { updateWinners, weiPrize, sendPrizeToWinner } = useContract();
+  const { updateWinners, weiPrize, sendPrizeToWinner, getAddressFromCandidateId } = useContract();
   const ethPrize = ethers.formatEther(BigInt(weiPrize));
   const [winner, setWinner] = useState(-1);
 
@@ -62,6 +62,7 @@ const AdminWinnerContent = ({ winners }: any) => {
       toast.promise(tx.wait(), {
         loading: "Loading...",
         success: () => {
+          window.location.reload();
           return `Transaction completed! ${tx.hash}`;
         },
         error: "There was an error with your transaction.",
@@ -104,7 +105,8 @@ const AdminWinnerContent = ({ winners }: any) => {
   if (winners.length === 1)
     return (
       <>
-        <div>Winner {winners[0]}</div>
+        <WinnerDisplay winner={getAddressFromCandidateId(winners[0])} />
+        <br />
         <Button onClick={() => submitSendPrize(winners[0])} size="lg">
           Send Prize ({ethPrize} ETH)
         </Button>
