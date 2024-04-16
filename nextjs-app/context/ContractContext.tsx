@@ -168,12 +168,14 @@ export const ContractProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const getPrizeSentTo = async () => {
+    if (!rewarderContract) return;
+    
     const sentPrizeTo = await rewarderContract.prizeSentTo();
     return sentPrizeTo;
   };
 
   const sendPrizeToWinner = async (winner: any) => {
-    const tx = await rewarderContract.sendPrizeToWinner(winner);
+    const tx = await rewarderContract["sendPrizeToWinner(uint256)"](winner);
     return tx;
   };
 

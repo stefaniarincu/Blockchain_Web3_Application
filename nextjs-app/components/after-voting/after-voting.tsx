@@ -1,12 +1,14 @@
 import useContract from "@/context/useContract";
 import React, { useEffect, useState } from "react";
 import { Button } from "../ui/button";
-import { Card, CardTitle, CardDescription, CardFooter } from "../ui/card";
+import { Card, CardTitle, CardDescription } from "../ui/card";
+import { NULL_ADDRESS } from "@/context/constants";
+import { ethers } from "ethers";
 
 const SelectWinner = ({ winners, setWinner }: any) => {
   const { candidates } = useContract();
   const candidatesData = candidates
-    .filter((candidate: any) => winners.includes(candidate.id))
+    .filter((candidate: any) => winners.includes(candidate[0]))
     .map((candidate: any) => {
       return {
         id: Number(candidate[0]),
@@ -27,7 +29,7 @@ const SelectWinner = ({ winners, setWinner }: any) => {
   return (
     <>
       {candidatesData.map((candidate: any) => (
-        <div key={candidate.id}>
+        <div key={candidate.id} className="flex gap-2">
           <input
             type="radio"
             id={`candidate_${candidate.id}`}
@@ -37,7 +39,9 @@ const SelectWinner = ({ winners, setWinner }: any) => {
             onChange={() => handleWinnerSelect(candidate.id)}
           />
           <label htmlFor={`candidate_${candidate.id}`}>
-            <div>{candidate.name}</div>
+            <div className="font-bold">
+              {candidate.name} ({candidate.address})
+            </div>
             <div>{candidate.description}</div>
           </label>
         </div>
@@ -48,6 +52,7 @@ const SelectWinner = ({ winners, setWinner }: any) => {
 
 const AdminWinnerContent = ({ winners }: any) => {
   const { updateWinners, weiPrize, sendPrizeToWinner } = useContract();
+  const ethPrize = ethers.formatEther(BigInt(weiPrize));
   const [winner, setWinner] = useState(-1);
 
   const submitUpdateWinners = async () => {
@@ -74,8 +79,8 @@ const AdminWinnerContent = ({ winners }: any) => {
 
   if (winners.length === 0)
     return (
-      <div>
-        Winners are not currently available.
+      <div className="flex flex-col gap-2">
+        <span>Winners are not currently available.</span>
         <Button onClick={submitUpdateWinners}>Update Winners</Button>
       </div>
     );
@@ -85,7 +90,7 @@ const AdminWinnerContent = ({ winners }: any) => {
       <>
         <div>Winner {winners[0]}</div>
         <Button onClick={() => submitSendPrize(winners[0])} size="lg">
-          Send Prize {weiPrize}
+          Send Prize ({ethPrize} ETH)
         </Button>
       </>
     );
@@ -93,7 +98,6 @@ const AdminWinnerContent = ({ winners }: any) => {
   if (winners.length > 1)
     return (
       <>
-        <CardTitle>Multiple Winners</CardTitle>
         <CardDescription>
           There are multiple winners. Please choose one to send the prize.
         </CardDescription>
@@ -101,7 +105,7 @@ const AdminWinnerContent = ({ winners }: any) => {
         <SelectWinner winners={winners} setWinner={setWinner} />
 
         <Button onClick={() => submitSendPrize(winner)} size="lg">
-          Send Prize {weiPrize}
+          Send Prize ({ethPrize} ETH)
         </Button>
       </>
     );
@@ -130,21 +134,12 @@ const AdminView = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  if (finalWinner) return `Winner: ${finalWinner}`;
+  if (finalWinner !== NULL_ADDRESS) return `Winner: ${finalWinner}`;
 
   return (
-    <Card className="m-auto max-w-xl space-y-4 rounded-xl bg-white p-8 shadow-md">
+    <Card className="m-auto max-w-2xl space-y-4 rounded-xl bg-white p-8 shadow-md">
       <CardTitle>Admin View</CardTitle>
-      <CardDescription>
-        {winners.length > 0
-          ? `Winner ${winners[0]}`
-          : "Winners are not currently available."}
-      </CardDescription>
-      <CardFooter>
-        {winners.length == 0 && (
-          <Button onClick={submitUpdateWinners}>Update Winners</Button>
-        )}
-      </CardFooter>
+      <AdminWinnerContent winners={winners} />
     </Card>
   );
 };
@@ -157,35 +152,23 @@ const UserWinnerContent = () => {
     getPrizeSentTo()
       .then((address: any) => {
         setWinner(address);
+        console.log(address);
       })
       .catch((error: any) => {});
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [getPrizeSentTo]);
 
-  if (!winner) return "Winner is not currently available.";
+  if (winner === NULL_ADDRESS) return "Winner is not currently available.";
 
   return `Winner: ${winner}`;
 };
 
 const UserView = () => {
-  const { getWinners } = useContract();
-  const [winners, setWinners] = React.useState([]);
-
-  React.useEffect(() => {
-    getWinners()
-      .then((winners: any) => {
-        console.log(winners);
-        setWinners(winners);
-      })
-      .catch((error: any) => {});
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
   return (
     <Card className="m-auto max-w-xl space-y-4 rounded-xl bg-white p-8 shadow-md">
       <CardTitle>Voting has ended!</CardTitle>
       <CardDescription>
-        <UserWinnerContent winners={winners} />
+        <UserWinnerContent />
       </CardDescription>
     </Card>
   );
