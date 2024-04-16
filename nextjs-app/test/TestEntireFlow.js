@@ -125,7 +125,11 @@ describe("Test entire flow", async function () {
         await voting.connect(acc7).vote([2]);
 
         await expect(
-            voting.debuggingGetWinners()
+            voting.getWinners()
+        ).to.be.revertedWith("Voting has not ended!");
+
+        await expect(
+            voting.updateWinners()
         ).to.be.revertedWith("Voting has not ended!");
 
         expect(
@@ -159,7 +163,13 @@ describe("Test entire flow", async function () {
             voting.connect(acc3).vote([0])
         ).to.be.revertedWith("Voting has not started or has already ended!");
 
-        const winners = await voting.debuggingGetWinners();
+        await expect(
+            voting.getWinners()
+          ).to.be.revertedWith("Winners have not been updated yet!");
+    
+        await voting.updateWinners();
+
+        const winners = await voting.getWinners();    
 
         expect(winners.length == 1, "There should be one winner").to.equal(true);
 

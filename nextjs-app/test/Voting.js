@@ -411,7 +411,13 @@ describe("Voting", async function () {
         "Voting not stopped"
       ).to.equal(true);
 
-      const winners = await voting.debuggingGetWinners();
+      await expect(
+        voting.getWinners()
+      ).to.be.revertedWith("Winners have not been updated yet!");
+
+      await voting.updateWinners();
+
+      const winners = await voting.getWinners();
 
       expect(winners.length == 1, "There should be one winner").to.equal(true);
 
@@ -511,7 +517,13 @@ describe("Voting", async function () {
         "Voting not stopped"
       ).to.equal(true);
 
-      const winners = await voting.debuggingGetWinners();
+      await expect(
+        voting.getWinners()
+      ).to.be.revertedWith("Winners have not been updated yet!");
+
+      await voting.updateWinners();
+
+      const winners = await voting.getWinners();
 
       expect(
         (await winners.length) > 1,
@@ -612,7 +624,13 @@ describe("Voting", async function () {
         "Voting not stopped"
       ).to.equal(true);
 
-      const winners = await voting.debuggingGetWinners();
+      await expect(
+        voting.getWinners()
+      ).to.be.revertedWith("Winners have not been updated yet!");
+
+      await voting.updateWinners();
+
+      const winners = await voting.getWinners();
 
       expect(
         (await winners.length) > 1,

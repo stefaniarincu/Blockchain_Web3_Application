@@ -420,8 +420,83 @@ describe("Security", async function () {
         await voting.startVoting({ value: COST_START });
 
         await expect(
-            voting.debuggingGetWinners()
+            voting.getWinners()
         ).to.be.revertedWith("Voting has not ended!");
     }); 
+
+    it("Cannot update winners if voting process has not ended", async function () {
+        const [admin, acc1, acc2] = await ethers.getSigners();
+        const INITIAL_PRIZE = 50;
+  
+        const Rewarder = await ethers.getContractFactory("Rewarder");
+        const rewarder = await Rewarder.deploy({ value: INITIAL_PRIZE });
+  
+        const Voting = await ethers.getContractFactory("Voting");
+        const voting = await Voting.deploy(await rewarder.getAddress());
+  
+        expect(await voting.rewarder(), "Incorrect rewarder address").to.equal(
+          await rewarder.getAddress()
+        );
+
+        await voting
+            .connect(acc1)
+            .candidate(
+                "Alice",
+                "I am Alice and I will build a blockchain around the world"
+            );
+
+        await voting
+            .connect(acc2)
+            .candidate(
+                "Alice",
+                "I am Alice and I will build a blockchain around the world"
+            );
+
+        const COST_START = await voting.adminStartVoteCost();
+        await voting.startVoting({ value: COST_START });
+
+        await expect(
+            voting.updateWinners()
+        ).to.be.revertedWith("Voting has not ended!");
+    });
+
+    it("Cannot get winners if they were not updated", async function () {
+        const [admin, acc1, acc2] = await ethers.getSigners();
+        const INITIAL_PRIZE = 50;
+  
+        const Rewarder = await ethers.getContractFactory("Rewarder");
+        const rewarder = await Rewarder.deploy({ value: INITIAL_PRIZE });
+  
+        const Voting = await ethers.getContractFactory("Voting");
+        const voting = await Voting.deploy(await rewarder.getAddress());
+  
+        expect(await voting.rewarder(), "Incorrect rewarder address").to.equal(
+          await rewarder.getAddress()
+        );
+
+        await voting
+            .connect(acc1)
+            .candidate(
+                "Alice",
+                "I am Alice and I will build a blockchain around the world"
+            );
+
+        await voting
+            .connect(acc2)
+            .candidate(
+                "Alice",
+                "I am Alice and I will build a blockchain around the world"
+            );
+
+        const COST_START = await voting.adminStartVoteCost();
+        await voting.startVoting({ value: COST_START });
+
+        const COST_STOP = await voting.adminEndVoteCost();
+        await voting.endVoting({ value: COST_STOP });
+
+        await expect(
+            voting.getWinners()
+        ).to.be.revertedWith("Winners have not been updated yet!");
+    });
   });
 });
