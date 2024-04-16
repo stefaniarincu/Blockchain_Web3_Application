@@ -121,7 +121,6 @@ const AdminView = () => {
   React.useEffect(() => {
     getWinners()
       .then((winners: any) => {
-        console.log(winners);
         setWinners(winners);
       })
       .catch((error: any) => {});
@@ -134,13 +133,39 @@ const AdminView = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  if (finalWinner !== NULL_ADDRESS) return `Winner: ${finalWinner}`;
+  if (finalWinner !== NULL_ADDRESS)
+    return <WinnerDisplay winner={finalWinner} />;
 
   return (
     <Card className="m-auto max-w-2xl space-y-4 rounded-xl bg-white p-8 shadow-md">
       <CardTitle>Admin View</CardTitle>
       <AdminWinnerContent winners={winners} />
     </Card>
+  );
+};
+
+const WinnerDisplay = ({ winner }: any) => {
+  const { getCandidateData } = useContract();
+  const [candidate, setCandidate] = useState<any>();
+
+  useEffect(() => {
+    getCandidateData(winner)
+      .then((candidate: any) => {
+        setCandidate(candidate);
+      })
+      .catch((error: any) => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [getCandidateData, winner]);
+
+  if (!candidate) return `Winner: ${winner}`;
+
+  return (
+    <div className="flex flex-col">
+      <div>
+        Winner: {candidate.name} ({candidate.address})
+      </div>
+      <div>Votes: {candidate.votes}</div>
+    </div>
   );
 };
 
@@ -152,7 +177,6 @@ const UserWinnerContent = () => {
     getPrizeSentTo()
       .then((address: any) => {
         setWinner(address);
-        console.log(address);
       })
       .catch((error: any) => {});
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -160,7 +184,7 @@ const UserWinnerContent = () => {
 
   if (winner === NULL_ADDRESS) return "Winner is not currently available.";
 
-  return `Winner: ${winner}`;
+  return <WinnerDisplay winner={winner} />;
 };
 
 const UserView = () => {

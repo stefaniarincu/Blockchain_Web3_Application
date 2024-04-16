@@ -169,7 +169,7 @@ export const ContractProvider = ({ children }: { children: ReactNode }) => {
 
   const getPrizeSentTo = async () => {
     if (!rewarderContract) return;
-    
+
     const sentPrizeTo = await rewarderContract.prizeSentTo();
     return sentPrizeTo;
   };
@@ -177,6 +177,28 @@ export const ContractProvider = ({ children }: { children: ReactNode }) => {
   const sendPrizeToWinner = async (winner: any) => {
     const tx = await rewarderContract["sendPrizeToWinner(uint256)"](winner);
     return tx;
+  };
+
+  const getCandidateData = async (address: any) => {
+    if (!candidates) return null;
+
+    // Assuming candidates is an array containing candidate data
+    address = address.toLowerCase();
+    const candidate = candidates.find(
+      (candidate: any) => candidate[1].toLowerCase() === address
+    );
+
+    if (candidate) {
+      return {
+        id: Number(candidate[0]),
+        address: candidate[1],
+        name: candidate[2],
+        description: candidate[3],
+        votes: Number(candidate[4]),
+      };
+    } else {
+      return null;
+    }
   };
 
   return (
@@ -199,6 +221,7 @@ export const ContractProvider = ({ children }: { children: ReactNode }) => {
         hasVotedFor,
         getPrizeSentTo,
         sendPrizeToWinner,
+        getCandidateData,
       }}
     >
       {children}
