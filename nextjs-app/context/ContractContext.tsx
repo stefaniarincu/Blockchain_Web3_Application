@@ -167,6 +167,16 @@ export const ContractProvider = ({ children }: { children: ReactNode }) => {
     return hasVoted;
   };
 
+  const getPrizeSentTo = async () => {
+    const sentPrizeTo = await rewarderContract.prizeSentTo();
+    return sentPrizeTo;
+  };
+
+  const sendPrizeToWinner = async (winner: any) => {
+    const tx = await rewarderContract.sendPrizeToWinner(winner);
+    return tx;
+  };
+
   return (
     <ContractContext.Provider
       value={{
@@ -185,6 +195,8 @@ export const ContractProvider = ({ children }: { children: ReactNode }) => {
         updateWinners,
         sendVotes,
         hasVotedFor,
+        getPrizeSentTo,
+        sendPrizeToWinner,
       }}
     >
       {children}
