@@ -5,6 +5,7 @@ import { Card, CardTitle, CardDescription } from "../ui/card";
 import { errorDecoder, NULL_ADDRESS } from "@/context/constants";
 import { ethers } from "ethers";
 import { toast } from "sonner";
+import { Input } from "../ui/input";
 
 const SelectWinner = ({ winners, setWinner }: any) => {
   const { candidates } = useContract();
@@ -148,6 +149,51 @@ const AdminWinnerContent = ({ winners }: any) => {
   return `Winner: ${winners[0]}`;
 };
 
+const RestartVoting = () => {
+  const { restartVotingSession } = useContract();
+
+  const inputRef = React.useRef<HTMLInputElement>(null);
+
+  const handleRestartVoting = async () => {
+    try {
+      const prize = inputRef.current?.value;
+      if (!prize)
+        return toast.error("Please enter a prize amount", { duration: 5000 });
+
+      const tx = await restartVotingSession(ethers.parseUnits(prize, "ether"));
+      toast.promise(tx.wait(), {
+        loading: "Loading...",
+        success: (receipt: any) => {
+          window.location.reload();
+          return (
+            <div>
+              Transaction completed! ({tx.hash})
+              <br />
+              Gas used: <b>{ethers.formatEther(receipt.gasUsed)} ETH</b>
+            </div>
+          );
+        },
+        error: "There was an error with your transaction.",
+      });
+    } catch (error: any) {
+      console.log(error);
+      const { reason } = await errorDecoder.decode(error);
+      toast.error(`Error restarting voting: "${reason}"`, { duration: 5000 });
+    }
+  };
+
+  return (
+    <Card className="p-5">
+      <label>Prize for new voting session</label>
+      <br />
+      <Input ref={inputRef} type="number" placeholder="ETH" />
+      <br />
+      <br />
+      <Button onClick={handleRestartVoting}>Restart Voting</Button>
+    </Card>
+  );
+};
+
 const AdminView = () => {
   const { getWinners, finalWinner } = useContract();
   const [winners, setWinners] = React.useState([]);
@@ -162,7 +208,12 @@ const AdminView = () => {
   }, []);
 
   if (finalWinner !== NULL_ADDRESS)
-    return <WinnerDisplay winner={finalWinner} />;
+    return (
+      <>
+        <WinnerDisplay winner={finalWinner} />
+        <RestartVoting />
+      </>
+    );
 
   return (
     <Card className="m-auto max-w-2xl space-y-4 rounded-xl bg-white p-8 shadow-md">

@@ -301,6 +301,14 @@ export const ContractProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  const restartVotingSession = async (weiValue: any) => {
+    const tx = await votingContract.restartVotingSession({
+      value: weiValue,
+      gasPrice,
+    });
+    return tx;
+  };
+
   return (
     <ContractContext.Provider
       value={{
@@ -325,6 +333,7 @@ export const ContractProvider = ({ children }: { children: ReactNode }) => {
         getAddressFromCandidateId,
         gasPrice,
         setGasPrice,
+        restartVotingSession,
       }}
     >
       {children}
