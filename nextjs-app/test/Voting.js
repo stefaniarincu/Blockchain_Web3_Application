@@ -536,4 +536,245 @@ describe("Voting", async function () {
       ).to.equal(true);
     });
   });
+
+  describe("Restart voting session", async function () {
+    it("Should fail if prize was not sent", async function () {
+      const [admin, acc1, acc2] = await ethers.getSigners();
+      const INITIAL_PRIZE = 50;
+
+      const Rewarder = await ethers.getContractFactory("Rewarder");
+      const rewarder = await Rewarder.deploy({ value: INITIAL_PRIZE });
+
+      const Voting = await ethers.getContractFactory("Voting");
+      const voting = await Voting.deploy(await rewarder.getAddress());
+
+      expect(await voting.rewarder(), "Incorrect rewarder address").to.equal(
+        await rewarder.getAddress()
+      );
+      
+      await voting
+        .connect(acc1)
+        .candidate(
+            "Bob",
+            "I am Bob and I will build a blockchain around China"
+        );
+
+      await voting
+        .connect(acc2)
+        .candidate(
+            "Alice",
+            "I am Alice and I will build a blockchain around the world"
+        );
+
+      const COST_START = await voting.adminStartVoteCost();
+      await voting.startVoting({ value: COST_START });
+
+      expect(
+        (await voting.checkVotingCurrentState()) == 1,
+        "Voting should be in started phase"
+      ).to.equal(true);
+
+      const COST_STOP = await voting.adminEndVoteCost();
+      await voting.endVoting({ value: COST_STOP });
+
+      expect(
+        (await voting.checkVotingCurrentState()) == 2,
+        "Voting not stopped"
+      ).to.equal(true);
+
+      await expect(
+        voting.restartVotingSession()
+      ).to.be.revertedWith("Prize has not been sent yet!");
+    });
+
+    it("Should fail if no funds sent to reset the contract", async function () {
+      const [admin, acc1, acc2] = await ethers.getSigners();
+      const INITIAL_PRIZE = 50;
+
+      const Rewarder = await ethers.getContractFactory("Rewarder");
+      const rewarder = await Rewarder.deploy({ value: INITIAL_PRIZE });
+
+      const Voting = await ethers.getContractFactory("Voting");
+      const voting = await Voting.deploy(await rewarder.getAddress());
+
+      expect(await voting.rewarder(), "Incorrect rewarder address").to.equal(
+        await rewarder.getAddress()
+      );
+      
+      await voting
+        .connect(acc1)
+        .candidate(
+            "Bob",
+            "I am Bob and I will build a blockchain around China"
+        );
+
+      await voting
+        .connect(acc2)
+        .candidate(
+            "Alice",
+            "I am Alice and I will build a blockchain around the world"
+        );
+
+      const COST_START = await voting.adminStartVoteCost();
+      await voting.startVoting({ value: COST_START });
+
+      expect(
+        (await voting.checkVotingCurrentState()) == 1,
+        "Voting should be in started phase"
+      ).to.equal(true);
+
+      await voting.connect(acc2).vote([0]);
+
+      const COST_STOP = await voting.adminEndVoteCost();
+      await voting.endVoting({ value: COST_STOP });
+
+      expect(
+        (await voting.checkVotingCurrentState()) == 2,
+        "Voting not stopped"
+      ).to.equal(true);
+
+      await voting.updateWinners();
+
+      const winners = await voting.getWinners();    
+
+      expect(winners.length == 1, "There should be one winner").to.equal(true);
+
+      expect(winners[0] == 0, "Winner should be Bob").to.equal(true);
+
+      const bobBalance = await ethers.provider.getBalance(acc1.address);
+      await rewarder.sendPrizeToWinner();
+      const bobBalanceAfterPrize = await ethers.provider.getBalance(
+          acc1.address
+      );
+
+      expect(
+          bobBalanceAfterPrize > bobBalance,
+          "Bob should receive prize"
+      ).to.equal(true);
+
+      await expect(
+        voting.restartVotingSession()
+      ).to.be.revertedWith("Amount must be greater than 0!");
+    });
+
+    it("Should work", async function () {
+      const [admin, acc1, acc2] = await ethers.getSigners();
+      const INITIAL_PRIZE = 50;
+
+      const Rewarder = await ethers.getContractFactory("Rewarder");
+      const rewarder = await Rewarder.deploy({ value: INITIAL_PRIZE });
+
+      const Voting = await ethers.getContractFactory("Voting");
+      const voting = await Voting.deploy(await rewarder.getAddress());
+
+      expect(await voting.rewarder(), "Incorrect rewarder address").to.equal(
+        await rewarder.getAddress()
+      );
+      
+      await voting
+        .connect(acc1)
+        .candidate(
+            "Bob",
+            "I am Bob and I will build a blockchain around China"
+        );
+
+      await voting
+        .connect(acc2)
+        .candidate(
+            "Alice",
+            "I am Alice and I will build a blockchain around the world"
+        );
+
+      const COST_START = await voting.adminStartVoteCost();
+      await voting.startVoting({ value: COST_START });
+
+      expect(
+        (await voting.checkVotingCurrentState()) == 1,
+        "Voting should be in started phase"
+      ).to.equal(true);
+
+      await voting.connect(acc2).vote([0]);
+
+      await expect(
+        voting.restartVotingSession()
+      ).to.be.revertedWith("Voting has not ended!");
+
+      const COST_STOP = await voting.adminEndVoteCost();
+      await voting.endVoting({ value: COST_STOP });
+
+      expect(
+        (await voting.checkVotingCurrentState()) == 2,
+        "Voting not stopped"
+      ).to.equal(true);
+
+      await voting.updateWinners();
+
+      const winners = await voting.getWinners();    
+
+      expect(winners.length == 1, "There should be one winner").to.equal(true);
+
+      expect(winners[0] == 0, "Winner should be Bob").to.equal(true);
+
+      const bobBalance = await ethers.provider.getBalance(acc1.address);
+      await rewarder.sendPrizeToWinner();
+      const bobBalanceAfterPrize = await ethers.provider.getBalance(
+          acc1.address
+      );
+
+      expect(
+          bobBalanceAfterPrize > bobBalance,
+          "Bob should receive prize"
+      ).to.equal(true);
+
+      await voting.restartVotingSession({ value: INITIAL_PRIZE });
+
+      expect(
+        (await voting.checkVotingCurrentState()) == 0,
+        "Voting should be in not started phase"
+      ).to.equal(true);
+
+      await expect(voting.startVoting({ value: COST_START })).to.be.revertedWith(
+          "Cannot start voting with less than two candidates!"
+      );
+
+      await voting
+        .connect(acc1)
+        .candidate(
+            "Bob",
+            "I am Bob and I will build a blockchain around China"
+        ); 
+
+      await voting
+      .connect(acc2)
+      .candidate(
+          "Alice",
+          "I am Alice and I will build a blockchain around the world"
+      );
+
+      await voting.startVoting({ value: COST_START });
+
+      await voting.connect(acc2).vote([0]);
+
+      await voting.endVoting({ value: COST_STOP });
+
+      await voting.updateWinners();
+
+      const winners_reseted = await voting.getWinners();    
+
+      expect(winners_reseted.length == 1, "There should be one winner").to.equal(true);
+
+      expect(winners_reseted[0] == 0, "Winner should be Bob").to.equal(true);
+
+      const bobBalance_reseted = await ethers.provider.getBalance(acc1.address);
+      await rewarder.sendPrizeToWinner();
+      const bobBalanceAfterPrize_reseted = await ethers.provider.getBalance(
+          acc1.address
+      );
+
+      expect(
+          bobBalanceAfterPrize_reseted > bobBalance_reseted,
+          "Bob should receive prize"
+      ).to.equal(true);
+    });
+  });
 });

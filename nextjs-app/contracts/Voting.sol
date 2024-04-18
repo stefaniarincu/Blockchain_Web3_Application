@@ -52,6 +52,8 @@ contract Voting {
     event StartVote(uint256 startVotingTimestamp);
     event EndVote(uint256 endVotingTimestamp);
 
+    event RestartVoting(uint256 startVotingTimestamp, uint256 stopVotingTimestamp);
+
     modifier onlyIfVotingNotStarted {
         require(checkVotingCurrentState() == VotingState.NotStarted, "Voting has already started or has ended!");
         _;
@@ -206,7 +208,11 @@ contract Voting {
         return candidatesList[_winnerId].candidateAddress;
     }
 
-    function restartVotingSession() public onlyAdmin onlyIfVotingEnded onlyIfPrizeSent {
+    function restartVotingSession() public onlyAdmin onlyIfVotingEnded onlyIfPrizeSent payable {        
+        require(msg.value > 0, "Amount must be greater than 0!");
+
+        rewarder.restartVotingSession();
+
         for (uint i = 0; i < votersAddressList.length; i++) {
             voters[votersAddressList[i]].numPersonsVoted = 0;
             
@@ -222,12 +228,14 @@ contract Voting {
 
         startVotingTimestamp = block.timestamp + 2 days;
         stopVotingTimestamp = startVotingTimestamp + 1 days;
-        
-        rewarder.restartVotingSession();
 
-		delete candidatesList;
+        delete candidatesList;
         delete votersAddressList;
         delete winnersCandidateIdList;
+
+        addFundsToRewarder();
+
+        emit RestartVoting(startVotingTimestamp, stopVotingTimestamp);
 	}
 
     receive() external payable {}

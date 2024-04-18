@@ -82,7 +82,7 @@ contract Rewarder {
         return sendPrizeToWinner(999);
     }
 
-    function restartVotingSession() public onlyVotingAdmin onlyIfLinked {
+    function restartVotingSession() public onlyVotingAdminOrContract onlyIfLinked {
         prizeSentTo = address(0);
         totalPrize = 0;
     }
