@@ -59,6 +59,7 @@ export function VotingOptionsModal() {
       });
     } catch (error: any) {
       console.log(error);
+      setToVoteIds([]);
       const { reason } = await errorDecoder.decode(error);
       toast.error(`Error submitting votes: "${reason}"`, { duration: 5000 });
     }
