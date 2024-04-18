@@ -82,6 +82,11 @@ contract Rewarder {
         return sendPrizeToWinner(999);
     }
 
+    function restartVotingSession() public onlyVotingAdminOrContract onlyIfLinked {
+        prizeSentTo = address(0);
+        totalPrize = 0;
+    }
+
     receive() external payable {
         emit PrizeAdded(msg.value);
     }

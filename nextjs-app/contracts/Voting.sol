@@ -36,6 +36,7 @@ contract Voting {
     }
 
     uint256[] private winnersCandidateIdList = new uint256[](0);
+    address[] private votersAddressList = new address[](0);
 
     uint256 public startVotingTimestamp;
     uint256 public stopVotingTimestamp;
@@ -50,6 +51,8 @@ contract Voting {
 
     event StartVote(uint256 startVotingTimestamp);
     event EndVote(uint256 endVotingTimestamp);
+
+    event RestartVoting(uint256 startVotingTimestamp, uint256 stopVotingTimestamp);
 
     modifier onlyIfVotingNotStarted {
         require(checkVotingCurrentState() == VotingState.NotStarted, "Voting has already started or has ended!");
@@ -78,6 +81,11 @@ contract Voting {
 
     modifier onlyIfAtLeastTwoCandidates {
         require(candidatesList.length > 1, "Cannot start voting with less than two candidates!");
+        _;
+    }
+
+    modifier onlyIfPrizeSent {
+        require(rewarder.prizeSentTo() != address(0), "Prize has not been sent yet!");
         _;
     }
 
@@ -161,6 +169,8 @@ contract Voting {
             voters[msg.sender].numPersonsVoted += 1;
         }
 
+        votersAddressList.push(msg.sender);
+
         emit SomeoneVoted(msg.sender, _candidateIds[0]);
     }
 
@@ -197,6 +207,36 @@ contract Voting {
     function getWinnerAddress(uint256 _winnerId) public onlyIfVotingEnded view returns (address) {
         return candidatesList[_winnerId].candidateAddress;
     }
+
+    function restartVotingSession() public onlyAdmin onlyIfVotingEnded onlyIfPrizeSent payable {        
+        require(msg.value > 0, "Amount must be greater than 0!");
+
+        rewarder.restartVotingSession();
+
+        for (uint i = 0; i < votersAddressList.length; i++) {
+            voters[votersAddressList[i]].numPersonsVoted = 0;
+            
+            for (uint j = 0; j < candidatesList.length; j++) {
+                voters[votersAddressList[i]].hasVotedFor[j] = false;
+            }
+        }
+
+        for (uint i = 0; i < candidatesList.length; i++) {
+            candidatesList[i].numVotes = 0;
+            hasCandidated[candidatesList[i].candidateAddress] = false;
+        }
+
+        startVotingTimestamp = block.timestamp + 2 days;
+        stopVotingTimestamp = startVotingTimestamp + 1 days;
+
+        delete candidatesList;
+        delete votersAddressList;
+        delete winnersCandidateIdList;
+
+        addFundsToRewarder();
+
+        emit RestartVoting(startVotingTimestamp, stopVotingTimestamp);
+	}
 
     receive() external payable {}
 }
