@@ -14,6 +14,8 @@ import { toast } from "sonner";
 export const ContractContext = createContext<any>(undefined);
 
 export const ContractProvider = ({ children }: { children: ReactNode }) => {
+  const [gasPrice, setGasPrice] = useState<number>(612371124);
+
   const [currentAccount, setCurrentAccount] = useState<string>("");
   const [adminAccount, setAdminAccount] = useState<string>("");
   const [votingContract, setVotingContract] = useState<any>(undefined);
@@ -216,42 +218,52 @@ export const ContractProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const submitCandidate = async (name: string, description: string) => {
-    const tx = await votingContract.candidate(name, description);
+    const tx = await votingContract.candidate(name, description, { gasPrice });
     return tx;
   };
 
   const startVoting = async () => {
-    const tx = await votingContract.startVoting({ value: startVotePriceWei });
+    const tx = await votingContract.startVoting({
+      value: startVotePriceWei,
+      gasPrice,
+    });
     return tx;
   };
 
   const stopVoting = async () => {
-    const tx = await votingContract.endVoting({ value: endVotePriceWei });
+    const tx = await votingContract.endVoting({
+      value: endVotePriceWei,
+      gasPrice,
+    });
     return tx;
   };
 
   const getWinners = async () => {
-    const winners = await votingContract.getWinners();
+    const winners = await votingContract.getWinners({ gasPrice });
     return winners;
   };
 
   const updateWinners = async () => {
-    const tx = await votingContract.updateWinners();
+    const tx = await votingContract.updateWinners({ gasPrice });
     return tx;
   };
 
   const sendVotes = async (votes: number[]) => {
-    const tx = await votingContract.vote(votes);
+    const tx = await votingContract.vote(votes, { gasPrice });
     return tx;
   };
 
   const hasVotedFor = async (voter: any, candidateId: any) => {
-    const hasVoted = await votingContract.hasVotedFor(voter, candidateId);
+    const hasVoted = await votingContract.hasVotedFor(voter, candidateId, {
+      gasPrice,
+    });
     return hasVoted;
   };
 
   const sendPrizeToWinner = async (winner: any) => {
-    const tx = await rewarderContract["sendPrizeToWinner(uint256)"](winner);
+    const tx = await rewarderContract["sendPrizeToWinner(uint256)"](winner, {
+      gasPrice,
+    });
     return tx;
   };
 
@@ -311,6 +323,8 @@ export const ContractProvider = ({ children }: { children: ReactNode }) => {
         sendPrizeToWinner,
         getCandidateData,
         getAddressFromCandidateId,
+        gasPrice,
+        setGasPrice,
       }}
     >
       {children}
