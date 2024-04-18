@@ -6,6 +6,7 @@ import { Input } from "../ui/input";
 import { Textarea } from "../ui/textarea";
 import { toast } from "sonner";
 import { errorDecoder } from "@/context/constants";
+import { ethers } from "ethers";
 
 const AdminView = () => {
   const { startVoting, candidates } = useContract();
@@ -15,8 +16,14 @@ const AdminView = () => {
       const tx = await startVoting();
       toast.promise(tx.wait(), {
         loading: "Loading...",
-        success: () => {
-          return `Transaction completed! ${tx.hash}`;
+        success: (receipt: any) => {
+          return (
+            <div>
+              Transaction completed! ({tx.hash})
+              <br />
+              Gas used: <b>{ethers.formatEther(receipt.gasUsed)} ETH</b>
+            </div>
+          );
         },
         error: "There was an error with your transaction.",
       });
@@ -58,15 +65,23 @@ const UserView = () => {
       const tx = await submitCandidate(name, description);
       toast.promise(tx.wait(), {
         loading: "Loading...",
-        success: () => {
-          return `Transaction completed! ${tx.hash}`;
+        success: (receipt: any) => {
+          return (
+            <div>
+              Transaction completed! ({tx.hash})
+              <br />
+              Gas used: <b>{ethers.formatEther(receipt.gasUsed)} ETH</b>
+            </div>
+          );
         },
         error: "There was an error with your transaction.",
       });
     } catch (error: any) {
       console.log(error);
       const { reason } = await errorDecoder.decode(error);
-      toast.error(`Error submitting candidate: "${reason}"`, { duration: 5000 });
+      toast.error(`Error submitting candidate: "${reason}"`, {
+        duration: 5000,
+      });
     }
   };
 

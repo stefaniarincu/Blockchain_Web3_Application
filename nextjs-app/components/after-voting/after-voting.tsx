@@ -52,7 +52,12 @@ const SelectWinner = ({ winners, setWinner }: any) => {
 };
 
 const AdminWinnerContent = ({ winners }: any) => {
-  const { updateWinners, weiPrize, sendPrizeToWinner, getAddressFromCandidateId } = useContract();
+  const {
+    updateWinners,
+    weiPrize,
+    sendPrizeToWinner,
+    getAddressFromCandidateId,
+  } = useContract();
   const ethPrize = ethers.formatEther(BigInt(weiPrize));
   const [winner, setWinner] = useState(-1);
 
@@ -61,9 +66,15 @@ const AdminWinnerContent = ({ winners }: any) => {
       const tx = await updateWinners();
       toast.promise(tx.wait(), {
         loading: "Loading...",
-        success: () => {
+        success: (receipt: any) => {
           window.location.reload();
-          return `Transaction completed! ${tx.hash}`;
+          return (
+            <div>
+              Transaction completed! ({tx.hash})
+              <br />
+              Gas used: <b>{ethers.formatEther(receipt.gasUsed)} ETH</b>
+            </div>
+          );
         },
         error: "There was an error with your transaction.",
       });
@@ -82,8 +93,14 @@ const AdminWinnerContent = ({ winners }: any) => {
       const tx = await sendPrizeToWinner(winnerId);
       toast.promise(tx.wait(), {
         loading: "Loading...",
-        success: () => {
-          return `Transaction completed! ${tx.hash}`;
+        success: (receipt: any) => {
+          return (
+            <div>
+              Transaction completed! ({tx.hash})
+              <br />
+              Gas used: <b>{ethers.formatEther(receipt.gasUsed)} ETH</b>
+            </div>
+          );
         },
         error: "There was an error with your transaction.",
       });

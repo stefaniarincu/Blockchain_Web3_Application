@@ -18,6 +18,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { errorDecoder } from "@/context/constants";
 import { DialogClose } from "@radix-ui/react-dialog";
+import { ethers } from "ethers";
 
 export function AlertPermanent() {
   return (
@@ -51,9 +52,15 @@ export function VotingOptionsModal() {
       const tx = await sendVotes(toVoteIds);
       toast.promise(tx.wait(), {
         loading: "Loading...",
-        success: () => {
+        success: (receipt: any) => {
           setToVoteIds([]);
-          return `Transaction completed! ${tx.hash}`;
+          return (
+            <div>
+              Transaction completed! ({tx.hash})
+              <br />
+              Gas used: <b>{ethers.formatEther(receipt.gasUsed)} ETH</b>
+            </div>
+          );
         },
         error: "There was an error with your transaction.",
       });

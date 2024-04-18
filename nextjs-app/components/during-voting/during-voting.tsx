@@ -6,6 +6,7 @@ import VotingChart from "./voting-chart";
 import { VotingOptionsModal } from "./voting-options-modal";
 import { toast } from "sonner";
 import { errorDecoder } from "@/context/constants";
+import { ethers } from "ethers";
 
 const AdminView = () => {
   const { stopVoting } = useContract();
@@ -15,8 +16,14 @@ const AdminView = () => {
       const tx = await stopVoting();
       toast.promise(tx.wait(), {
         loading: "Loading...",
-        success: () => {
-          return `Transaction completed! ${tx.hash}`;
+        success: (receipt: any) => {
+          return (
+            <div>
+              Transaction completed! ({tx.hash})
+              <br />
+              Gas used: <b>{ethers.formatEther(receipt.gasUsed)} ETH</b>
+            </div>
+          );
         },
         error: "There was an error with your transaction.",
       });
